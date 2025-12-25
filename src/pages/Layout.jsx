@@ -17,7 +17,7 @@ export default function Layout({ children, currentPageName }) {
   
   const navLinks = [
     { name: 'About', page: 'About' },
-    { name: 'Recommended Profiles', page: 'RecommendedProfiles' },
+    ...(isAuthenticated ? [{ name: 'Recommended Profiles', page: 'RecommendedProfiles' }] : []),
     { name: 'Membership', page: 'Membership' },
     { name: 'Safety', page: 'Safety' },
     { name: 'Help', page: 'FAQ' },
