@@ -1,29 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Heart, Menu, X, User, ChevronDown } from 'lucide-react';
+import { Heart, Menu, X, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Layout({ children, currentPageName }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const authenticated = await base44.auth.isAuthenticated();
-        setIsAuthenticated(authenticated);
-      } catch (e) {
-        setIsAuthenticated(false);
-      }
-    };
-    checkAuth();
-  }, []);
-  
-  // Pages that don't need the header
-  const pagesWithoutHeader = ['Onboarding', 'Dashboard', 'Browse', 'Matches', 'Profile', 'RecommendedProfiles', 'EditProfile', 'Messages'];
+  // Pages that don't need the header (they have their own)
+  const pagesWithoutHeader = ['Onboarding', 'Dashboard', 'Browse', 'Matches', 'Profile', 'RecommendedProfiles', 'EditProfile', 'Messages', 'Login'];
   const showHeader = !pagesWithoutHeader.includes(currentPageName);
   
   const navLinks = [
@@ -110,10 +99,10 @@ export default function Layout({ children, currentPageName }) {
                   </Link>
                 ) : (
                   <>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="text-gray-600 hover:text-[#C46A4A]"
-                      onClick={() => base44.auth.redirectToLogin()}
+                      onClick={() => navigate('/login')}
                     >
                       Sign In
                     </Button>
@@ -164,10 +153,10 @@ export default function Layout({ children, currentPageName }) {
                     </Link>
                   ) : (
                     <>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full rounded-full"
-                        onClick={() => base44.auth.redirectToLogin()}
+                        onClick={() => navigate('/login')}
                       >
                         Sign In
                       </Button>

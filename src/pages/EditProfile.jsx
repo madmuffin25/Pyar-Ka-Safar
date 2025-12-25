@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Heart, ArrowLeft, Loader2, Camera, Trash2, Plus, Save, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Plus, Save } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
 
 const ethnicityOptions = [
   { value: 'north_indian', label: 'North Indian' },
@@ -106,18 +108,24 @@ const languageOptions = [
 export default function EditProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [formData, setFormData] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: userProfiles, isLoading } = useQuery({
-    queryKey: ['myProfile'],
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['myProfile', user?.id],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.UserProfile.filter({ created_by: user.email });
-    }
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user
   });
-
-  const profile = userProfiles?.[0];
 
   useEffect(() => {
     if (profile && !formData) {
@@ -126,7 +134,13 @@ export default function EditProfile() {
   }, [profile]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.UserProfile.update(profile.id, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myProfile'] });
       toast.success('Profile updated successfully!');
@@ -136,14 +150,26 @@ export default function EditProfile() {
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     setIsUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${uuidv4()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
       setFormData(prev => ({
         ...prev,
-        photos: [...(prev.photos || []), file_url]
+        photos: [...(prev.photos || []), publicUrl]
       }));
     } catch (error) {
       toast.error('Failed to upload photo');

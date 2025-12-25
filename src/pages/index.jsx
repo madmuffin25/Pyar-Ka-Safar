@@ -28,38 +28,45 @@ import TermsOfService from "./TermsOfService";
 
 import RecommendedProfiles from "./RecommendedProfiles";
 
+import Login from "./Login";
+
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import PublicOnlyRoute from "@/components/auth/PublicOnlyRoute";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
-    
+
     Home: Home,
-    
+
     About: About,
-    
+
     Membership: Membership,
-    
+
     Safety: Safety,
-    
+
     FAQ: FAQ,
-    
+
     Onboarding: Onboarding,
-    
+
     Dashboard: Dashboard,
-    
+
     Browse: Browse,
-    
+
     Matches: Matches,
-    
+
     Profile: Profile,
-    
+
     Messages: Messages,
-    
+
     EditProfile: EditProfile,
-    
+
     TermsOfService: TermsOfService,
-    
+
     RecommendedProfiles: RecommendedProfiles,
-    
+
+    Login: Login,
+
 }
 
 function _getCurrentPage(url) {
@@ -82,39 +89,28 @@ function PagesContent() {
     
     return (
         <Layout currentPageName={currentPage}>
-            <Routes>            
-                
-                    <Route path="/" element={<Home />} />
-                
-                
+            <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Home />} />
                 <Route path="/Home" element={<Home />} />
-                
                 <Route path="/About" element={<About />} />
-                
                 <Route path="/Membership" element={<Membership />} />
-                
                 <Route path="/Safety" element={<Safety />} />
-                
                 <Route path="/FAQ" element={<FAQ />} />
-                
-                <Route path="/Onboarding" element={<Onboarding />} />
-                
-                <Route path="/Dashboard" element={<Dashboard />} />
-                
-                <Route path="/Browse" element={<Browse />} />
-                
-                <Route path="/Matches" element={<Matches />} />
-                
-                <Route path="/Profile" element={<Profile />} />
-                
-                <Route path="/Messages" element={<Messages />} />
-                
-                <Route path="/EditProfile" element={<EditProfile />} />
-                
                 <Route path="/TermsOfService" element={<TermsOfService />} />
-                
-                <Route path="/RecommendedProfiles" element={<RecommendedProfiles />} />
-                
+
+                {/* Public only routes - redirect to dashboard if logged in */}
+                <Route path="/Login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                <Route path="/Onboarding" element={<PublicOnlyRoute><Onboarding /></PublicOnlyRoute>} />
+
+                {/* Protected routes */}
+                <Route path="/Dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/Browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
+                <Route path="/Matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
+                <Route path="/Profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/Messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+                <Route path="/EditProfile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                <Route path="/RecommendedProfiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
             </Routes>
         </Layout>
     );

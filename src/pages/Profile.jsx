@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Heart, Search, User, MessageCircle, LogOut, Loader2, Settings, Camera, Edit2, Check, MapPin, GraduationCap, Briefcase, Sparkles } from 'lucide-react';
+import { Heart, Search, User, MessageCircle, LogOut, Loader2, Camera, Edit2, MapPin, GraduationCap, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,18 +29,24 @@ const formatLabel = (value) => {
 export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  
+  const { user, signOut } = useAuth();
+
   // Get current user's profile
-  const { data: userProfiles, isLoading } = useQuery({
-    queryKey: ['myProfile'],
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['myProfile', user?.id],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.UserProfile.filter({ created_by: user.email });
-    }
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user
   });
-  
-  const profile = userProfiles?.[0];
-  
+
   // Calculate profile completeness
   const calculateCompleteness = () => {
     if (!profile) return 0;
@@ -47,28 +55,41 @@ export default function Profile() {
       'education', 'occupation', 'diet', 'height_feet', 'interests',
       'personality_type', 'relationship_goal', 'prompts'
     ];
-    
+
     let completed = 0;
     fields.forEach(field => {
       if (profile[field] && (Array.isArray(profile[field]) ? profile[field].length > 0 : true)) {
         completed++;
       }
     });
-    
+
     return Math.round((completed / fields.length) * 100);
   };
-  
+
   const completeness = calculateCompleteness();
-  
+
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.UserProfile.delete(profile.id),
-    onSuccess: () => {
-      base44.auth.logout();
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await signOut();
+      navigate('/');
     }
   });
 
   const toggleVisibilityMutation = useMutation({
-    mutationFn: (isHidden) => base44.entities.UserProfile.update(profile.id, { is_hidden: isHidden }),
+    mutationFn: async (isHidden) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_hidden: isHidden })
+        .eq('id', user.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myProfile'] });
       toast.success(profile.is_hidden ? 'Profile is now visible' : 'Profile is now hidden');
@@ -83,10 +104,11 @@ export default function Profile() {
     toggleVisibilityMutation.mutate(!profile.is_hidden);
   };
 
-  const handleLogout = () => {
-    base44.auth.logout();
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
   };
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white flex items-center justify-center">
@@ -94,7 +116,7 @@ export default function Profile() {
       </div>
     );
   }
-  
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white flex items-center justify-center p-4">
@@ -109,7 +131,7 @@ export default function Profile() {
       </div>
     );
   }
-  
+
   const goalLabels = {
     dil_se_casual: "Dil-Se Casual",
     vibe_check: "Vibe Check Only",
@@ -117,9 +139,9 @@ export default function Profile() {
     light_dating: "Light Dating",
     real_connection: "Real Connection",
     long_term_serious: "Long-Term Serious",
-    shaadi_ready: "Shaadi-Ready 💍"
+    shaadi_ready: "Shaadi-Ready"
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white">
       {/* Header */}
@@ -132,7 +154,7 @@ export default function Profile() {
               </div>
               <span className="text-xl font-bold text-gray-900 hidden sm:block">PyarKaSafar</span>
             </Link>
-            
+
             <nav className="flex items-center gap-2">
               <Link to={createPageUrl('Dashboard')}>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -154,9 +176,9 @@ export default function Profile() {
                   <MessageCircle className="w-5 h-5" />
                 </Button>
               </Link>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="rounded-full"
                 onClick={handleLogout}
               >
@@ -166,20 +188,20 @@ export default function Profile() {
           </div>
         </div>
       </header>
-      
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Profile Header */}
         <div className="bg-white rounded-3xl shadow-lg overflow-hidden mb-6">
           {/* Cover Photo Area */}
           <div className="h-32 bg-gradient-to-r from-[#C46A4A] to-[#D4A853]" />
-          
+
           {/* Profile Photo */}
           <div className="px-6 pb-6">
             <div className="relative -mt-16 mb-4">
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
                 {profile.photos?.[0] ? (
-                  <img 
+                  <img
                     src={profile.photos[0]}
                     alt={profile.first_name}
                     className="w-full h-full object-cover"
@@ -192,12 +214,12 @@ export default function Profile() {
                   </div>
                 )}
               </div>
-              
+
               <button className="absolute bottom-0 right-0 w-10 h-10 bg-[#C46A4A] rounded-full flex items-center justify-center text-white shadow-lg">
                 <Camera className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -208,7 +230,7 @@ export default function Profile() {
                   <span>{profile.city}, {profile.state}</span>
                 </div>
               </div>
-              
+
               <Link to={createPageUrl('EditProfile')}>
                 <Button variant="outline" className="rounded-full">
                   <Edit2 className="w-4 h-4 mr-2" />
@@ -218,7 +240,7 @@ export default function Profile() {
             </div>
           </div>
         </div>
-        
+
         {/* Profile Completeness */}
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -232,11 +254,11 @@ export default function Profile() {
             </p>
           )}
         </div>
-        
+
         {/* Quick Info */}
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
           <h3 className="font-bold text-gray-900 mb-4">About Me</h3>
-          
+
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {profile.ethnicity && (
@@ -261,16 +283,16 @@ export default function Profile() {
                 </Badge>
               )}
             </div>
-            
+
             {profile.relationship_goal && (
               <div className="flex items-center gap-2 text-[#C46A4A]">
                 <Heart className="w-4 h-4" />
-                <span className="font-medium">{goalLabels[profile.relationship_goal]}</span>
+                <span className="font-medium">{goalLabels[profile.relationship_goal] || formatLabel(profile.relationship_goal)}</span>
               </div>
             )}
           </div>
         </div>
-        
+
         {/* Prompts */}
         {profile.prompts && profile.prompts.length > 0 && (
           <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
@@ -287,7 +309,7 @@ export default function Profile() {
             </div>
           </div>
         )}
-        
+
         {/* Interests */}
         {profile.interests && profile.interests.length > 0 && (
           <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
@@ -301,7 +323,7 @@ export default function Profile() {
             </div>
           </div>
         )}
-        
+
         {/* Photos */}
         {profile.photos && profile.photos.length > 0 && (
           <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
@@ -309,7 +331,7 @@ export default function Profile() {
             <div className="grid grid-cols-3 gap-3">
               {profile.photos.map((photo, index) => (
                 <div key={index} className="aspect-square rounded-xl overflow-hidden">
-                  <img 
+                  <img
                     src={photo}
                     alt={`Photo ${index + 1}`}
                     className="w-full h-full object-cover"
@@ -319,7 +341,7 @@ export default function Profile() {
             </div>
           </div>
         )}
-        
+
         {/* Settings Links */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
           <Link to={createPageUrl('Membership')} className="flex items-center justify-between p-4 border-b hover:bg-gray-50 transition-colors">
@@ -335,7 +357,7 @@ export default function Profile() {
             <span className="font-medium text-gray-900">Help & Support</span>
           </Link>
 
-          <button 
+          <button
             onClick={handleToggleVisibility}
             disabled={toggleVisibilityMutation.isPending}
             className="w-full flex items-center justify-between p-4 border-b hover:bg-gray-50 transition-colors"
@@ -378,8 +400,8 @@ export default function Profile() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          </div>
-          </main>
-          </div>
-          );
-          }
+        </div>
+      </main>
+    </div>
+  );
+}

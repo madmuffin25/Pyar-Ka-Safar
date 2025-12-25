@@ -1,60 +1,89 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, Camera, X, Plus, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
 export default function Step3Photos({ data, updateData, onNext, onBack }) {
   const [uploading, setUploading] = useState(false);
+  const { user } = useAuth();
   const photos = data.photos || [];
-  
+
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    
+    if (files.length === 0 || !user) return;
+
     setUploading(true);
     try {
       const uploadPromises = files.map(async (file) => {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        return file_url;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${uuidv4()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('profile-photos')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(fileName);
+
+        return publicUrl;
       });
-      
+
       const uploadedUrls = await Promise.all(uploadPromises);
       const newPhotos = [...photos, ...uploadedUrls].slice(0, 6);
       updateData({ photos: newPhotos });
     } catch (error) {
       console.error('Upload error:', error);
+      toast.error('Failed to upload photo. Please try again.');
     } finally {
       setUploading(false);
     }
   };
-  
-  const removePhoto = (index) => {
+
+  const removePhoto = async (index) => {
+    const photoUrl = photos[index];
     const newPhotos = photos.filter((_, i) => i !== index);
     updateData({ photos: newPhotos });
+
+    // Optionally delete from storage (extract path from URL)
+    try {
+      const urlParts = photoUrl.split('/profile-photos/');
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+        await supabase.storage.from('profile-photos').remove([filePath]);
+      }
+    } catch (error) {
+      console.error('Error deleting photo from storage:', error);
+    }
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (photos.length >= 1) {
       onNext();
     }
   };
-  
+
   return (
     <div className="max-w-lg mx-auto">
       <div className="text-center mb-10">
         <h2 className="text-3xl font-bold text-gray-900 mb-3">Add Your Photos</h2>
         <p className="text-gray-600">Add 1-6 photos that show the real you</p>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Photo Grid */}
         <div className="grid grid-cols-3 gap-4">
           {[...Array(6)].map((_, index) => {
             const photo = photos[index];
-            
+
             return (
-              <div 
+              <div
                 key={index}
                 className={`relative aspect-[3/4] rounded-2xl overflow-hidden ${
                   index === 0 ? 'col-span-2 row-span-2' : ''
@@ -62,8 +91,8 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
               >
                 {photo ? (
                   <>
-                    <img 
-                      src={photo} 
+                    <img
+                      src={photo}
                       alt={`Photo ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -103,7 +132,7 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
             );
           })}
         </div>
-        
+
         {/* Guidelines */}
         <div className="bg-[#F9F2EB] rounded-xl p-4">
           <div className="flex items-start gap-3">
@@ -119,16 +148,16 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
             </div>
           </div>
         </div>
-        
+
         {photos.length === 0 && (
           <div className="flex items-center gap-2 text-amber-600 bg-amber-50 rounded-xl p-4">
             <AlertCircle className="w-5 h-5" />
             <span className="text-sm">Please add at least 1 photo to continue</span>
           </div>
         )}
-        
+
         <div className="flex gap-4">
-          <Button 
+          <Button
             type="button"
             variant="outline"
             onClick={onBack}
@@ -137,7 +166,7 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </Button>
-          <Button 
+          <Button
             type="submit"
             disabled={photos.length === 0}
             className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group disabled:opacity-50"
