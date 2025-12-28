@@ -20,7 +20,8 @@ import ProfilePreview from '@/components/onboarding/ProfilePreview';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  // If user is already authenticated, skip Step 1 (account creation) and start at Step 2
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -30,6 +31,29 @@ export default function Onboarding() {
     preference_age_max: 45,
     preference_distance_miles: 50
   });
+
+  // Check if user already has a complete profile - redirect to Dashboard
+  // Or skip to Step 2 if user is authenticated but has no profile
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (!loading && user) {
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('profile_complete')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (existingProfile?.profile_complete) {
+          // User already has a complete profile, redirect to Dashboard
+          navigate(createPageUrl('Dashboard'), { replace: true });
+        } else if (currentStep === 1) {
+          // User is authenticated but no complete profile, skip account creation step
+          setCurrentStep(2);
+        }
+      }
+    };
+    checkProfile();
+  }, [user, loading, currentStep, navigate]);
 
   // Capture geolocation on mount (for Step 2 or later)
   useEffect(() => {
@@ -64,6 +88,9 @@ export default function Onboarding() {
   const prevStep = () => {
     if (showPreview) {
       setShowPreview(false);
+    } else if (currentStep === 2 && user) {
+      // If user is authenticated and on Step 2, go back to Dashboard instead of Step 1
+      navigate(createPageUrl('Dashboard'));
     } else {
       setCurrentStep(prev => prev - 1);
     }

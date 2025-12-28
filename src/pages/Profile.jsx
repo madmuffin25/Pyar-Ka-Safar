@@ -40,8 +40,8 @@ export default function Profile() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
+        .maybeSingle();
+      if (error) throw error;
       return data;
     },
     enabled: !!user

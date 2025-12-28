@@ -101,7 +101,9 @@ function PagesContent() {
 
                 {/* Public only routes - redirect to dashboard if logged in */}
                 <Route path="/Login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-                <Route path="/Onboarding" element={<PublicOnlyRoute><Onboarding /></PublicOnlyRoute>} />
+
+                {/* Onboarding - accessible to both authenticated (step 2+) and unauthenticated (step 1) users */}
+                <Route path="/Onboarding" element={<Onboarding />} />
 
                 {/* Protected routes */}
                 <Route path="/Dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

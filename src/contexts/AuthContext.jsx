@@ -41,7 +41,20 @@ export function AuthProvider({ children }) {
       email,
       password,
     });
-    if (error) throw error;
+
+    if (error) {
+      // Handle user already exists error
+      if (error.message?.includes('already registered') || error.status === 422) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      }
+      throw error;
+    }
+
+    // Check if email already exists (Supabase returns empty identities array for security)
+    if (data?.user?.identities?.length === 0) {
+      throw new Error('An account with this email already exists. Please sign in instead.');
+    }
+
     return data;
   };
 
