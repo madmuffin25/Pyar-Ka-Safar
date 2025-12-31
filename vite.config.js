@@ -6,8 +6,10 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: true
+    allowedHosts: true,
+    historyApiFallback: true
   },
+  appType: 'spa',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

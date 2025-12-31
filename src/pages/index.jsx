@@ -92,27 +92,27 @@ function PagesContent() {
             <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Home />} />
-                <Route path="/Home" element={<Home />} />
-                <Route path="/About" element={<About />} />
-                <Route path="/Membership" element={<Membership />} />
-                <Route path="/Safety" element={<Safety />} />
-                <Route path="/FAQ" element={<FAQ />} />
-                <Route path="/TermsOfService" element={<TermsOfService />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/membership" element={<Membership />} />
+                <Route path="/safety" element={<Safety />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/termsofservice" element={<TermsOfService />} />
 
                 {/* Public only routes - redirect to dashboard if logged in */}
-                <Route path="/Login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+                <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
 
                 {/* Onboarding - accessible to both authenticated (step 2+) and unauthenticated (step 1) users */}
-                <Route path="/Onboarding" element={<Onboarding />} />
+                <Route path="/onboarding" element={<Onboarding />} />
 
                 {/* Protected routes */}
-                <Route path="/Dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/Browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
-                <Route path="/Matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
-                <Route path="/Profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/Messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-                <Route path="/EditProfile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-                <Route path="/RecommendedProfiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
+                <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+                <Route path="/editprofile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                <Route path="/recommendedprofiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
             </Routes>
         </Layout>
     );
