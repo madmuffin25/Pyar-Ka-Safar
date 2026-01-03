@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, X } from 'lucide-react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-export default function MatchModal({ isOpen, onClose, matchedProfile, currentUser }) {
+export default function MatchModal({ isOpen, onClose, matchedProfile, currentUser, onSendMessage }) {
   if (!matchedProfile) return null;
   
   return (
@@ -71,16 +71,17 @@ export default function MatchModal({ isOpen, onClose, matchedProfile, currentUse
           
           {/* Action Buttons */}
           <div className="space-y-3">
-            <Button 
-              className="w-full py-6 bg-white text-[#C46A4A] hover:bg-white/90 rounded-xl text-lg font-medium"
+            <Button
+              className="w-full py-6 bg-white text-[#C46A4A] hover:bg-white/90 rounded-xl text-lg font-medium disabled:opacity-50"
+              onClick={() => onSendMessage && onSendMessage(matchedProfile)}
+              disabled={!onSendMessage}
             >
               <MessageCircle className="w-5 h-5 mr-2" />
-              Send a Message
+              {onSendMessage ? 'Send a Message' : 'Messaging Coming Soon'}
             </Button>
-            <Button 
-              variant="outline"
+            <Button
               onClick={onClose}
-              className="w-full py-6 border-2 border-white text-white hover:bg-white/10 rounded-xl text-lg"
+              className="w-full py-6 border-2 border-white bg-transparent text-white hover:bg-white/10 rounded-xl text-lg font-medium"
             >
               Keep Browsing
             </Button>

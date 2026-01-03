@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, X, Star, MapPin, Sparkles, ChevronLeft, ChevronRight, MessageCircle, Ban } from 'lucide-react';
+import { Heart, X, MapPin, Sparkles, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ const formatLabel = (value) => {
   return value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-export default function ProfileCard({ profile, onLike, onPass, onSuperLike, onBlock, compatibility }) {
+export default function ProfileCard({ profile, onLike, onPass, onBlock, compatibility, distance }) {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const photos = profile.photos || [];
@@ -134,7 +134,10 @@ export default function ProfileCard({ profile, onLike, onPass, onSuperLike, onBl
           </h3>
           <div className="flex items-center gap-2 text-white/90 mb-3">
             <MapPin className="w-4 h-4" />
-            <span>{profile.city}, {profile.state}</span>
+            <span>
+              {profile.city}, {profile.state}
+              {distance != null && ` • ${Math.round(distance)} mi`}
+            </span>
           </div>
           
           <div className="flex flex-wrap gap-2">
@@ -184,7 +187,7 @@ export default function ProfileCard({ profile, onLike, onPass, onSuperLike, onBl
       
       {/* Action Buttons */}
       <div className="p-6 pt-4">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-6">
           <Button
             onClick={() => onPass(profile)}
             variant="outline"
@@ -193,16 +196,7 @@ export default function ProfileCard({ profile, onLike, onPass, onSuperLike, onBl
           >
             <X className="w-8 h-8 text-gray-400 group-hover:text-red-500 transition-colors" />
           </Button>
-          
-          <Button
-            onClick={() => onSuperLike(profile)}
-            variant="outline"
-            size="lg"
-            className="w-14 h-14 rounded-full border-2 border-[#D4A853] hover:bg-[#D4A853]/10 transition-all group"
-          >
-            <Star className="w-6 h-6 text-[#D4A853] group-hover:fill-[#D4A853] transition-colors" />
-          </Button>
-          
+
           <Button
             onClick={() => onLike(profile)}
             size="lg"
