@@ -4,8 +4,9 @@ import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2 } from 'lucide-react';
+import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useMutualMatches } from '@/hooks/useMatches';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -26,6 +27,9 @@ export default function Dashboard() {
     },
     enabled: !!user
   });
+
+  // Get mutual matches count
+  const { data: matches = [] } = useMutualMatches();
 
   const handleLogout = async () => {
     await signOut();
@@ -124,29 +128,40 @@ export default function Dashboard() {
           </h1>
         </div>
 
-        {/* Coming Soon Card */}
-        <div className="max-w-md mx-auto">
-          <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-            <div className="w-20 h-20 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Heart className="w-10 h-10 text-[#C46A4A]" />
+        {/* Action Cards */}
+        <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Browse Card */}
+          <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-[#C46A4A]" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Matching Coming Soon</h2>
-            <p className="text-gray-600 mb-6">
-              Your profile is set up! The matching feature will be available in the next update.
-              In the meantime, you can view and edit your profile.
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Find Your Match</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Browse profiles and find someone special
             </p>
-            <div className="flex flex-col gap-3">
-              <Link to={createPageUrl('Profile')}>
-                <Button className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
-                  View My Profile
-                </Button>
-              </Link>
-              <Link to={createPageUrl('EditProfile')}>
-                <Button variant="outline" className="w-full rounded-full">
-                  Edit Profile
-                </Button>
-              </Link>
+            <Link to={createPageUrl('Browse')}>
+              <Button className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
+                Start Browsing
+              </Button>
+            </Link>
+          </div>
+
+          {/* Matches Card */}
+          <div className="bg-white rounded-3xl shadow-xl p-6 text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-[#C46A4A]" />
             </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Your Matches</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              {matches.length > 0
+                ? `You have ${matches.length} ${matches.length === 1 ? 'match' : 'matches'}!`
+                : 'No matches yet. Keep browsing!'}
+            </p>
+            <Link to={createPageUrl('Matches')}>
+              <Button variant="outline" className="w-full rounded-full">
+                View Matches
+              </Button>
+            </Link>
           </div>
         </div>
 

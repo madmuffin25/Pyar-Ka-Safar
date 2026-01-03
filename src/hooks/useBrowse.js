@@ -71,9 +71,8 @@ export function useMatchAction() {
       return { match: data, isMutualMatch: false };
     },
     onSuccess: () => {
-      // Invalidate browsable profiles to refresh the queue
-      queryClient.invalidateQueries({ queryKey: ['browsableProfiles'] });
-      // Invalidate mutual matches in case there's a new match
+      // Don't invalidate browsableProfiles - managed locally in Browse.jsx for smooth UX
+      // Only invalidate mutualMatches to update Matches page
       queryClient.invalidateQueries({ queryKey: ['mutualMatches'] });
     }
   });
@@ -104,8 +103,7 @@ export function useBlockUser() {
       return data;
     },
     onSuccess: () => {
-      // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['browsableProfiles'] });
+      // Don't invalidate browsableProfiles - managed locally in Browse.jsx
       queryClient.invalidateQueries({ queryKey: ['mutualMatches'] });
     }
   });

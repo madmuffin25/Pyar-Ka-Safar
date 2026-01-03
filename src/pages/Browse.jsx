@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
@@ -16,8 +16,9 @@ export default function Browse() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // State
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // State - local queue for smooth UX (no flash on like/pass)
+  const [localQueue, setLocalQueue] = useState([]);
+  const [queueInitialized, setQueueInitialized] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState(null);
 
@@ -48,8 +49,17 @@ export default function Browse() {
   const matchAction = useMatchAction();
   const blockUser = useBlockUser();
 
-  // Current profile to display
-  const currentProfile = profiles[currentIndex];
+  // Sync server data to local queue (only on initial load or refresh)
+  useEffect(() => {
+    // Initialize queue when loading finishes, even if empty
+    if (!loadingProfiles && !queueInitialized) {
+      setLocalQueue(profiles);
+      setQueueInitialized(true);
+    }
+  }, [profiles, loadingProfiles, queueInitialized]);
+
+  // Current profile is always the first in the local queue
+  const currentProfile = localQueue[0];
 
   // Calculate compatibility for current profile
   const compatibility = useMemo(() => {
@@ -57,8 +67,11 @@ export default function Browse() {
     return calculateCompatibility(userProfile, currentProfile);
   }, [userProfile, currentProfile]);
 
-  // Handlers
+  // Handlers with optimistic updates
   const handleLike = async (profile) => {
+    // Optimistic update - remove from queue immediately
+    setLocalQueue(prev => prev.filter(p => p.id !== profile.id));
+
     try {
       const result = await matchAction.mutateAsync({
         targetUserId: profile.id,
@@ -69,52 +82,51 @@ export default function Browse() {
         setMatchedProfile(profile);
         setShowMatchModal(true);
       }
-
-      moveToNextProfile();
     } catch (error) {
+      // Rollback on error - add profile back to front of queue
+      setLocalQueue(prev => [profile, ...prev]);
       toast.error('Failed to like profile');
       console.error(error);
     }
   };
 
   const handlePass = async (profile) => {
+    // Optimistic update - remove from queue immediately
+    setLocalQueue(prev => prev.filter(p => p.id !== profile.id));
+
     try {
       await matchAction.mutateAsync({
         targetUserId: profile.id,
         action: 'pass'
       });
-      moveToNextProfile();
     } catch (error) {
+      // Rollback on error
+      setLocalQueue(prev => [profile, ...prev]);
       toast.error('Failed to pass profile');
       console.error(error);
     }
   };
 
   const handleBlock = async (profile) => {
+    // Optimistic update - remove from queue immediately
+    setLocalQueue(prev => prev.filter(p => p.id !== profile.id));
+
     try {
       await blockUser.mutateAsync(profile.id);
       toast.success('User blocked', {
         description: 'They will no longer appear in your browse'
       });
-      moveToNextProfile();
     } catch (error) {
+      // Rollback on error
+      setLocalQueue(prev => [profile, ...prev]);
       toast.error('Failed to block user');
       console.error(error);
     }
   };
 
-  const moveToNextProfile = () => {
-    if (currentIndex < profiles.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      // Reached end of queue, refetch
-      setCurrentIndex(0);
-      refetchProfiles();
-    }
-  };
-
   const handleRefresh = () => {
-    setCurrentIndex(0);
+    setQueueInitialized(false);
+    setLocalQueue([]);
     refetchProfiles();
   };
 
@@ -123,8 +135,8 @@ export default function Browse() {
     navigate('/');
   };
 
-  // Loading state
-  if (loadingUser || loadingProfiles) {
+  // Loading state - also wait for queue to be initialized
+  if (loadingUser || loadingProfiles || !queueInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-[#C46A4A] animate-spin" />
@@ -132,8 +144,8 @@ export default function Browse() {
     );
   }
 
-  // No profiles available
-  const noProfiles = !profiles.length || currentIndex >= profiles.length;
+  // No profiles available - check local queue
+  const noProfiles = localQueue.length === 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white">
@@ -226,10 +238,12 @@ export default function Browse() {
               distance={currentProfile?.distance_miles}
             />
 
-            {/* Progress indicator */}
-            <div className="mt-4 text-center text-sm text-gray-500">
-              {currentIndex + 1} of {profiles.length} profiles
-            </div>
+            {/* Progress indicator - show remaining profiles */}
+            {localQueue.length > 1 && (
+              <div className="mt-4 text-center text-sm text-gray-500">
+                {localQueue.length - 1} more {localQueue.length - 1 === 1 ? 'profile' : 'profiles'}
+              </div>
+            )}
           </div>
         )}
       </main>
