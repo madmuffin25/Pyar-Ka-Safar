@@ -5,6 +5,7 @@ import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useBrowsableProfiles, useMatchAction, useBlockUser } from '@/hooks/useBrowse';
+import { useUnreadCount } from '@/hooks/useMessages';
 import { calculateCompatibility } from '@/components/utils/calculateCompatibility';
 import ProfileCard from '@/components/dashboard/ProfileCard';
 import MatchModal from '@/components/dashboard/MatchModal';
@@ -48,6 +49,9 @@ export default function Browse() {
   // Mutations
   const matchAction = useMatchAction();
   const blockUser = useBlockUser();
+
+  // Get unread message count
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   // Sync server data to local queue (only on initial load or refresh)
   useEffect(() => {
@@ -135,6 +139,11 @@ export default function Browse() {
     navigate('/');
   };
 
+  const handleSendMessage = (profile) => {
+    setShowMatchModal(false);
+    navigate(`/chat/${profile.id}`);
+  };
+
   // Loading state - also wait for queue to be initialized
   if (loadingUser || loadingProfiles || !queueInitialized) {
     return (
@@ -174,9 +183,14 @@ export default function Browse() {
               <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10">
                 <Search className="w-5 h-5 text-[#C46A4A]" />
               </Button>
-              <Link to={createPageUrl('Matches')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
+              <Link to={createPageUrl('Messages')}>
+                <Button variant="ghost" size="icon" className="rounded-full relative">
                   <MessageCircle className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C46A4A] text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Button>
               </Link>
               <Link to={createPageUrl('Profile')}>
@@ -254,7 +268,7 @@ export default function Browse() {
         onClose={() => setShowMatchModal(false)}
         matchedProfile={matchedProfile}
         currentUser={userProfile}
-        onSendMessage={null}
+        onSendMessage={handleSendMessage}
       />
     </div>
   );

@@ -60,7 +60,7 @@ export default function ChatWindow({ messages, currentUserId, otherUser, onSendM
                     <p>{msg.content}</p>
                   </div>
                   <p className={`text-xs text-gray-400 mt-1 ${isOwn ? 'text-right' : ''}`}>
-                    {format(new Date(msg.created_date), 'h:mm a')}
+                    {format(new Date(msg.created_at), 'h:mm a')}
                   </p>
                 </div>
               </div>

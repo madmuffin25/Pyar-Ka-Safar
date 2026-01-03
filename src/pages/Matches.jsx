@@ -5,6 +5,7 @@ import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useMutualMatches } from '@/hooks/useMatches';
+import { useUnreadCount } from '@/hooks/useMessages';
 import { calculateCompatibility } from '@/components/utils/calculateCompatibility';
 import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, MapPin, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -33,9 +34,16 @@ export default function Matches() {
   // Fetch mutual matches
   const { data: matches = [], isLoading } = useMutualMatches();
 
+  // Get unread message count
+  const { data: unreadCount = 0 } = useUnreadCount();
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleMessage = (match) => {
+    navigate(`/chat/${match.matched_user_id}`);
   };
 
   if (isLoading) {
@@ -75,9 +83,16 @@ export default function Matches() {
                   <Search className="w-5 h-5" />
                 </Button>
               </Link>
-              <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10">
-                <MessageCircle className="w-5 h-5 text-[#C46A4A]" />
-              </Button>
+              <Link to={createPageUrl('Messages')}>
+                <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10 relative">
+                  <MessageCircle className="w-5 h-5 text-[#C46A4A]" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C46A4A] text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Link to={createPageUrl('Profile')}>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <User className="w-5 h-5" />
@@ -134,6 +149,7 @@ export default function Matches() {
                   key={match.match_id}
                   match={match}
                   userProfile={userProfile}
+                  onMessage={handleMessage}
                 />
               ))}
             </div>
@@ -145,7 +161,7 @@ export default function Matches() {
 }
 
 // Match Card Component
-function MatchCard({ match, userProfile }) {
+function MatchCard({ match, userProfile, onMessage }) {
   const compatibility = userProfile
     ? calculateCompatibility(userProfile, match)
     : null;
@@ -211,10 +227,10 @@ function MatchCard({ match, userProfile }) {
 
         <Button
           className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
-          disabled
+          onClick={() => onMessage(match)}
         >
           <MessageCircle className="w-4 h-4 mr-2" />
-          Message Coming Soon
+          Send Message
         </Button>
       </div>
     </div>

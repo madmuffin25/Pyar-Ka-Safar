@@ -22,6 +22,8 @@ import Profile from "./Profile";
 
 import Messages from "./Messages";
 
+import Chat from "./Chat";
+
 import EditProfile from "./EditProfile";
 
 import TermsOfService from "./TermsOfService";
@@ -111,6 +113,7 @@ function PagesContent() {
                 <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+                <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/editprofile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
                 <Route path="/recommendedprofiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
             </Routes>
