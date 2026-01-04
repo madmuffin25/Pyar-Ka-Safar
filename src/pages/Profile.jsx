@@ -4,7 +4,7 @@ import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Heart, Search, User, MessageCircle, LogOut, Loader2, Camera, Edit2, MapPin, GraduationCap, Sparkles } from 'lucide-react';
+import { Heart, Search, User, MessageCircle, LogOut, Loader2, Camera, Edit2, MapPin, GraduationCap, Sparkles, Crown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -222,9 +222,17 @@ export default function Profile() {
 
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {profile.first_name}, {profile.age}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {profile.first_name}, {profile.age}
+                  </h1>
+                  {profile.is_premium && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-[#C46A4A] to-[#D4A853] rounded-full">
+                      <Crown className="w-3 h-3 text-white" />
+                      <span className="text-xs font-medium text-white">Premium</span>
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-gray-600 mt-1">
                   <MapPin className="w-4 h-4" />
                   <span>{profile.city}, {profile.state}</span>
@@ -345,10 +353,19 @@ export default function Profile() {
         {/* Settings Links */}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
           <Link to={createPageUrl('Membership')} className="flex items-center justify-between p-4 border-b hover:bg-gray-50 transition-colors">
-            <span className="font-medium text-gray-900">Upgrade to Premium</span>
-            <Badge className="bg-gradient-to-r from-[#C46A4A] to-[#D4A853] text-white">
-              Pro
-            </Badge>
+            <span className="font-medium text-gray-900">
+              {profile.is_premium ? 'Manage Subscription' : 'Upgrade to Premium'}
+            </span>
+            {profile.is_premium ? (
+              <Badge className="bg-gradient-to-r from-[#C46A4A] to-[#D4A853] text-white">
+                <Crown className="w-3 h-3 mr-1" />
+                Premium
+              </Badge>
+            ) : (
+              <Badge className="bg-gradient-to-r from-[#C46A4A] to-[#D4A853] text-white">
+                Pro
+              </Badge>
+            )}
           </Link>
           <Link to={createPageUrl('Safety')} className="flex items-center justify-between p-4 border-b hover:bg-gray-50 transition-colors">
             <span className="font-medium text-gray-900">Privacy & Safety</span>

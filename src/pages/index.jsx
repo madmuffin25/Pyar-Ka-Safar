@@ -32,6 +32,10 @@ import RecommendedProfiles from "./RecommendedProfiles";
 
 import Login from "./Login";
 
+import PaymentSuccess from "./PaymentSuccess";
+
+import PaymentCancel from "./PaymentCancel";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import PublicOnlyRoute from "@/components/auth/PublicOnlyRoute";
 
@@ -116,6 +120,10 @@ function PagesContent() {
                 <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/editprofile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
                 <Route path="/recommendedprofiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
+
+                {/* Payment result routes */}
+                <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+                <Route path="/payment/cancel" element={<PaymentCancel />} />
             </Routes>
         </Layout>
     );

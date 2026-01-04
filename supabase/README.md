@@ -60,6 +60,50 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 | File | Description |
 |------|-------------|
 | `20241225000000_initial_schema.sql` | Creates profiles table, RLS policies, indexes, triggers |
+| `20241231000000_browse_matches.sql` | Creates matches and blocks tables, browsable profiles function |
+| `20250103000000_messaging.sql` | Creates messages table with real-time support |
+| `20250104000000_premium_boost.sql` | Adds premium boost to get_browsable_profiles |
+| `20250104100000_subscriptions.sql` | Adds stripe_customer_id and subscriptions table |
+
+## Edge Functions (Stripe Integration)
+
+### Deploy Edge Functions
+
+```bash
+# Login to Supabase
+supabase login
+
+# Link to project
+supabase link --project-ref smxpsjjtzccsqnfgywnd
+
+# Deploy functions
+supabase functions deploy create-checkout
+supabase functions deploy stripe-webhook
+```
+
+### Set Stripe Secrets
+
+Get these from Stripe Dashboard:
+- **Secret Key:** Dashboard → Developers → API keys
+- **Webhook Secret:** Dashboard → Developers → Webhooks → Your endpoint → Signing secret
+- **Price IDs:** Dashboard → Products → Your product → Price IDs
+
+```bash
+supabase secrets set STRIPE_SECRET_KEY=sk_test_your_key
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_your_secret
+supabase secrets set STRIPE_MONTHLY_PRICE_ID=price_monthly_id
+supabase secrets set STRIPE_YEARLY_PRICE_ID=price_yearly_id
+```
+
+### Stripe Dashboard Setup
+
+1. Create a Product "PyarKaSafar Premium" with 2 prices:
+   - Monthly: $24.99 recurring
+   - Yearly: $240.00 recurring
+
+2. Create Webhook endpoint:
+   - URL: `https://smxpsjjtzccsqnfgywnd.supabase.co/functions/v1/stripe-webhook`
+   - Events: `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`
 
 ## Future Migrations
 
