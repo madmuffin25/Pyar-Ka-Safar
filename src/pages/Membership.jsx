@@ -22,7 +22,7 @@ const plans = [
       { text: "Browse profiles", included: true },
       { text: "Send up to 5 likes per day", included: true },
       { text: "Unlimited likes", included: false },
-      { text: "Super Likes", included: false },
+      { text: "Profile Boost", included: false },
     ]
   },
   {
@@ -39,7 +39,7 @@ const plans = [
       { text: "Upload up to 6 photos", included: true },
       { text: "Browse profiles", included: true },
       { text: "Unlimited likes", included: true },
-      { text: "5 Super Likes per day", included: true },
+      { text: "Profile Boost", included: true },
     ]
   }
 ];
@@ -235,10 +235,9 @@ export default function Membership() {
                   <div className="space-y-3">
                     {[
                       "Unlimited likes",
-                      "5 Super Likes per day",
+                      "Profile Boost - appear first in Browse",
                       "Upload up to 6 photos",
-                      "Priority in search results",
-                      "Boosted profile visibility"
+                      "Priority in search results"
                     ].map((benefit, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">

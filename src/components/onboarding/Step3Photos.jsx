@@ -6,14 +6,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 
+const FREE_PHOTO_LIMIT = 3;
+
 export default function Step3Photos({ data, updateData, onNext, onBack }) {
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
   const photos = data.photos || [];
+  const maxPhotos = FREE_PHOTO_LIMIT; // During onboarding, user is always free tier
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0 || !user) return;
+
+    // Check if adding these files would exceed limit
+    if (photos.length + files.length > maxPhotos) {
+      toast.error(`Free users can upload up to ${maxPhotos} photos`, {
+        description: "Upgrade to Premium for up to 6 photos!"
+      });
+      return;
+    }
 
     setUploading(true);
     try {
@@ -35,7 +46,7 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
-      const newPhotos = [...photos, ...uploadedUrls].slice(0, 6);
+      const newPhotos = [...photos, ...uploadedUrls].slice(0, maxPhotos);
       updateData({ photos: newPhotos });
     } catch (error) {
       console.error('Upload error:', error);
@@ -73,13 +84,13 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
     <div className="max-w-lg mx-auto">
       <div className="text-center mb-10">
         <h2 className="text-3xl font-bold text-gray-900 mb-3">Add Your Photos</h2>
-        <p className="text-gray-600">Add 1-6 photos that show the real you</p>
+        <p className="text-gray-600">Add 1-{maxPhotos} photos that show the real you</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Photo Grid */}
         <div className="grid grid-cols-3 gap-4">
-          {[...Array(6)].map((_, index) => {
+          {[...Array(maxPhotos)].map((_, index) => {
             const photo = photos[index];
 
             return (

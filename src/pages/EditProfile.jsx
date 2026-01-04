@@ -105,6 +105,9 @@ const languageOptions = [
   'Telugu', 'Marathi', 'Kannada', 'Malayalam', 'Urdu', 'Odia'
 ];
 
+const FREE_PHOTO_LIMIT = 3;
+const PREMIUM_PHOTO_LIMIT = 6;
+
 export default function EditProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -148,9 +151,29 @@ export default function EditProfile() {
     }
   });
 
+  const maxPhotos = formData?.is_premium ? PREMIUM_PHOTO_LIMIT : FREE_PHOTO_LIMIT;
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
+    const currentPhotos = formData?.photos || [];
+
+    // Check photo limit
+    if (currentPhotos.length >= maxPhotos) {
+      if (!formData?.is_premium) {
+        toast.error(`Free users can upload up to ${FREE_PHOTO_LIMIT} photos`, {
+          description: "Upgrade to Premium for up to 6 photos!",
+          action: {
+            label: "Upgrade",
+            onClick: () => navigate('/membership')
+          }
+        });
+      } else {
+        toast.error(`Maximum ${PREMIUM_PHOTO_LIMIT} photos allowed`);
+      }
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -440,9 +463,21 @@ export default function EditProfile() {
           {/* Photos */}
           <TabsContent value="photos">
             <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-              <h3 className="font-bold text-gray-900">Photos</h3>
-              <p className="text-sm text-gray-500">Add up to 6 photos</p>
-              
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-gray-900">Photos</h3>
+                  <p className="text-sm text-gray-500">
+                    Add up to {maxPhotos} photos
+                    {!formData?.is_premium && (
+                      <span className="text-[#C46A4A]"> (Premium: 6)</span>
+                    )}
+                  </p>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {(formData.photos || []).length}/{maxPhotos}
+                </span>
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 {(formData.photos || []).map((photo, index) => (
                   <div key={index} className="aspect-square rounded-xl overflow-hidden relative group">
@@ -455,8 +490,8 @@ export default function EditProfile() {
                     </button>
                   </div>
                 ))}
-                
-                {(formData.photos || []).length < 6 && (
+
+                {(formData.photos || []).length < maxPhotos && (
                   <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#C46A4A] transition-colors">
                     <input
                       type="file"

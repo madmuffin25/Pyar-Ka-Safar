@@ -13,6 +13,8 @@ import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, RefreshC
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 
+const FREE_DAILY_LIKE_LIMIT = 5;
+
 export default function Browse() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ export default function Browse() {
   const [queueInitialized, setQueueInitialized] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState(null);
+  const [dailyLikeCount, setDailyLikeCount] = useState(0);
 
   // Fetch current user's profile
   const { data: userProfile, isLoading: loadingUser } = useQuery({
@@ -62,6 +65,27 @@ export default function Browse() {
     }
   }, [profiles, loadingProfiles, queueInitialized]);
 
+  // Count today's likes for free users
+  useEffect(() => {
+    const countTodayLikes = async () => {
+      if (!user || userProfile?.is_premium) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { count } = await supabase
+        .from('matches')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('action', 'like')
+        .gte('created_at', today.toISOString());
+
+      setDailyLikeCount(count || 0);
+    };
+
+    countTodayLikes();
+  }, [user, userProfile?.is_premium]);
+
   // Current profile is always the first in the local queue
   const currentProfile = localQueue[0];
 
@@ -73,6 +97,18 @@ export default function Browse() {
 
   // Handlers with optimistic updates
   const handleLike = async (profile) => {
+    // Check like limit for free users
+    if (!userProfile?.is_premium && dailyLikeCount >= FREE_DAILY_LIKE_LIMIT) {
+      toast.error("You've reached your daily like limit", {
+        description: "Upgrade to Premium for unlimited likes!",
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate('/membership')
+        }
+      });
+      return;
+    }
+
     // Optimistic update - remove from queue immediately
     setLocalQueue(prev => prev.filter(p => p.id !== profile.id));
 
@@ -81,6 +117,11 @@ export default function Browse() {
         targetUserId: profile.id,
         action: 'like'
       });
+
+      // Increment local like count for free users
+      if (!userProfile?.is_premium) {
+        setDailyLikeCount(prev => prev + 1);
+      }
 
       if (result.isMutualMatch) {
         setMatchedProfile(profile);
@@ -251,6 +292,29 @@ export default function Browse() {
               compatibility={compatibility}
               distance={currentProfile?.distance_miles}
             />
+
+            {/* Like counter for free users */}
+            {!userProfile?.is_premium && (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+                  dailyLikeCount >= FREE_DAILY_LIKE_LIMIT
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-[#C46A4A]/10 text-[#C46A4A]'
+                }`}>
+                  <Heart className="w-4 h-4 inline mr-1" />
+                  {FREE_DAILY_LIKE_LIMIT - dailyLikeCount} likes left today
+                </div>
+                {dailyLikeCount >= FREE_DAILY_LIKE_LIMIT && (
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/membership')}
+                    className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full text-xs"
+                  >
+                    Upgrade
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Progress indicator - show remaining profiles */}
             {localQueue.length > 1 && (

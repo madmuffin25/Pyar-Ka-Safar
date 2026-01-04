@@ -55,8 +55,8 @@ const faqCategories = [
         a: "When you like someone and they like you back, it's a match! You can then start messaging each other. Our algorithm also shows you recommended matches based on compatibility."
       },
       {
-        q: "What's a Super Like?",
-        a: "A Super Like lets someone know you're especially interested in them. It appears highlighted in their discovery feed. Premium members get 5 Super Likes per day."
+        q: "What's Profile Boost?",
+        a: "Profile Boost makes your profile appear first in Browse results, increasing your visibility to potential matches. Premium members get Profile Boost automatically."
       },
       {
         q: "Can I see who liked me?",
@@ -73,7 +73,7 @@ const faqCategories = [
     questions: [
       {
         q: "What's included in Premium?",
-        a: "Premium includes unlimited likes, seeing who liked you, advanced filters, priority in search, read receipts, 5 Super Likes per day, icebreaker prompts, and weekly profile boosts."
+        a: "Premium includes unlimited likes, Profile Boost (appear first in Browse), upload up to 6 photos, seeing who liked you, advanced filters, and priority in search results."
       },
       {
         q: "How do I cancel my subscription?",
