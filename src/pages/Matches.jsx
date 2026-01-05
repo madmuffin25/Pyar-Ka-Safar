@@ -1,10 +1,10 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useMutualMatches, useLikesReceived, useLikesSent } from '@/hooks/useMatches';
+import { useMatchAction } from '@/hooks/useBrowse';
 import { useUnreadCount } from '@/hooks/useMessages';
 import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, Users, Star } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 export default function Matches() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   // Fetch current user's profile for premium check
   const { data: userProfile } = useQuery({
@@ -36,6 +35,31 @@ export default function Matches() {
   const { data: matches = [], isLoading: loadingMatches } = useMutualMatches();
   const { data: likesReceived = [], isLoading: loadingReceived } = useLikesReceived();
   const { data: likesSent = [], isLoading: loadingSent } = useLikesSent();
+
+  // Like back action
+  const matchAction = useMatchAction();
+
+  // Filter out mutual matches from likesReceived (they already appear in Matches tab)
+  const matchedUserIds = new Set(matches.map(m => m.matched_user_id));
+  const pendingLikes = likesReceived.filter(profile => !matchedUserIds.has(profile.id));
+
+  const handleLikeBack = (profile) => {
+    matchAction.mutate(
+      { targetUserId: profile.id, action: 'like' },
+      {
+        onSuccess: (result) => {
+          if (result.isMutualMatch) {
+            toast.success(`It's a match with ${profile.first_name}! 🎉`);
+          } else {
+            toast.success(`You liked ${profile.first_name}`);
+          }
+        },
+        onError: () => {
+          toast.error('Failed to like profile');
+        }
+      }
+    );
+  };
 
   // Get unread message count
   const { data: unreadCount = 0 } = useUnreadCount();
@@ -159,7 +183,7 @@ export default function Matches() {
             </TabsTrigger>
             <TabsTrigger value="likes" className="flex items-center gap-2">
               <Heart className="w-4 h-4" />
-              Likes You ({likesReceived.length})
+              Likes You ({pendingLikes.length})
             </TabsTrigger>
             <TabsTrigger value="sent" className="flex items-center gap-2">
               <Star className="w-4 h-4" />
@@ -232,7 +256,7 @@ export default function Matches() {
           <TabsContent value="likes">
             {userProfile?.is_premium ? (
               // Premium users can see who liked them
-              likesReceived.length === 0 ? (
+              pendingLikes.length === 0 ? (
                 <div className="text-center py-20">
                   <div className="w-20 h-20 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Heart className="w-10 h-10 text-[#C46A4A]" />
@@ -244,7 +268,7 @@ export default function Matches() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {likesReceived.map((profile) => (
+                  {pendingLikes.map((profile) => (
                     <div
                       key={profile.id}
                       className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
@@ -273,12 +297,14 @@ export default function Matches() {
                       </div>
 
                       <div className="p-3">
-                        <Link to={`/browse`}>
-                          <Button className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
-                            <Heart className="w-4 h-4 mr-2" />
-                            View Profile
-                          </Button>
-                        </Link>
+                        <Button
+                          className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
+                          onClick={() => handleLikeBack(profile)}
+                          disabled={matchAction.isPending}
+                        >
+                          <Heart className="w-4 h-4 mr-2" />
+                          Like Back
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -291,7 +317,7 @@ export default function Matches() {
                   <Heart className="w-10 h-10 text-[#C46A4A]" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-3">
-                  {likesReceived.length} {likesReceived.length === 1 ? 'person liked' : 'people liked'} you
+                  {pendingLikes.length} people liked you
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Upgrade to Premium to see who likes you
@@ -306,36 +332,17 @@ export default function Matches() {
           </TabsContent>
 
           <TabsContent value="sent">
-            {likesSent.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Star className="w-10 h-10 text-gray-300" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-3">
-                  You haven't liked anyone yet
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  Start browsing to find your match!
-                </p>
-                <Link to={createPageUrl('Browse')}>
-                  <Button className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
-                    Browse Profiles
-                  </Button>
-                </Link>
+            <div className="text-center py-20">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Star className="w-10 h-10 text-gray-300" />
               </div>
-            ) : (
-              <div className="text-center py-20">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Star className="w-10 h-10 text-gray-300" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-3">
-                  You've liked {likesSent.length} {likesSent.length === 1 ? 'profile' : 'profiles'}
-                </h2>
-                <p className="text-gray-600">
-                  Keep swiping to make more connections!
-                </p>
-              </div>
-            )}
+              <h2 className="text-xl font-bold text-gray-900 mb-3">
+                You've liked {likesSent.length} profiles
+              </h2>
+              <p className="text-gray-600">
+                Keep swiping to make more connections!
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
