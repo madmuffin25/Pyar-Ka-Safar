@@ -1,21 +1,22 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
-import { useMutualMatches } from '@/hooks/useMatches';
+import { useMutualMatches, useLikesReceived, useLikesSent } from '@/hooks/useMatches';
 import { useUnreadCount } from '@/hooks/useMessages';
-import { calculateCompatibility } from '@/components/utils/calculateCompatibility';
-import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, MapPin, Users } from 'lucide-react';
+import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, Users, Star } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from 'sonner';
 
 export default function Matches() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  // Fetch current user's profile for compatibility calculation
+  // Fetch current user's profile for premium check
   const { data: userProfile } = useQuery({
     queryKey: ['myProfile', user?.id],
     queryFn: async () => {
@@ -31,19 +32,54 @@ export default function Matches() {
     enabled: !!user
   });
 
-  // Fetch mutual matches
-  const { data: matches = [], isLoading } = useMutualMatches();
+  // Fetch all data for tabs
+  const { data: matches = [], isLoading: loadingMatches } = useMutualMatches();
+  const { data: likesReceived = [], isLoading: loadingReceived } = useLikesReceived();
+  const { data: likesSent = [], isLoading: loadingSent } = useLikesSent();
 
   // Get unread message count
   const { data: unreadCount = 0 } = useUnreadCount();
 
+  const isLoading = loadingMatches || loadingReceived || loadingSent;
+
+  // Start or open conversation
+  const startConversationMutation = useMutation({
+    mutationFn: async (targetProfile) => {
+      // Check if conversation already exists
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`and(participant_1.eq.${user.id},participant_2.eq.${targetProfile.matched_user_id || targetProfile.id}),and(participant_1.eq.${targetProfile.matched_user_id || targetProfile.id},participant_2.eq.${user.id})`)
+        .maybeSingle();
+
+      if (existingConv) {
+        return existingConv;
+      }
+
+      // Create new conversation
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert({
+          participant_1: user.id,
+          participant_2: targetProfile.matched_user_id || targetProfile.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, targetProfile) => {
+      navigate(`/chat/${targetProfile.matched_user_id || targetProfile.id}`);
+    },
+    onError: () => {
+      toast.error('Failed to start conversation');
+    }
+  });
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const handleMessage = (match) => {
-    navigate(`/chat/${match.matched_user_id}`);
   };
 
   if (isLoading) {
@@ -84,8 +120,8 @@ export default function Matches() {
                 </Button>
               </Link>
               <Link to={createPageUrl('Messages')}>
-                <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10 relative">
-                  <MessageCircle className="w-5 h-5 text-[#C46A4A]" />
+                <Button variant="ghost" size="icon" className="rounded-full relative">
+                  <MessageCircle className="w-5 h-5" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C46A4A] text-white text-xs rounded-full flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -113,126 +149,196 @@ export default function Matches() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Page Title */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full mb-4">
-              <Heart className="w-4 h-4 text-[#C46A4A] fill-[#C46A4A]" />
-              <span className="text-sm font-medium text-[#C46A4A]">Your Matches</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {matches.length} {matches.length === 1 ? 'Match' : 'Matches'}
-            </h1>
-          </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Matches & Likes</h1>
 
-          {matches.length === 0 ? (
-            // Empty state
-            <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Users className="w-10 h-10 text-[#C46A4A]" />
+        <Tabs defaultValue="matches" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="matches" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Matches ({matches.length})
+            </TabsTrigger>
+            <TabsTrigger value="likes" className="flex items-center gap-2">
+              <Heart className="w-4 h-4" />
+              Likes You ({likesReceived.length})
+            </TabsTrigger>
+            <TabsTrigger value="sent" className="flex items-center gap-2">
+              <Star className="w-4 h-4" />
+              Sent ({likesSent.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="matches">
+            {matches.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-10 h-10 text-gray-300" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3">No Matches Yet</h2>
+                <p className="text-gray-600 mb-6">
+                  Keep swiping to find your perfect match!
+                </p>
+                <Link to={createPageUrl('Browse')}>
+                  <Button className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
+                    Browse Profiles
+                  </Button>
+                </Link>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">No Matches Yet</h2>
-              <p className="text-gray-600 mb-6">
-                Keep browsing to find your perfect match! When you and someone both like each other, they'll appear here.
-              </p>
-              <Link to={createPageUrl('Browse')}>
-                <Button className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
-                  Start Browsing
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            // Matches grid
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {matches.map((match) => (
-                <MatchCard
-                  key={match.match_id}
-                  match={match}
-                  userProfile={userProfile}
-                  onMessage={handleMessage}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {matches.map((profile) => (
+                  <div
+                    key={profile.match_id}
+                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+                  >
+                    <div className="aspect-square relative">
+                      {profile.photos?.[0] ? (
+                        <img
+                          src={profile.photos[0]}
+                          alt={profile.first_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#C46A4A]/20 to-[#D4A853]/20 flex items-center justify-center">
+                          <span className="text-3xl font-bold text-[#C46A4A]">
+                            {profile.first_name?.[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                        <h3 className="font-bold">{profile.first_name}, {profile.age}</h3>
+                        <p className="text-sm text-white/80">{profile.city}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3">
+                      <Button
+                        className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
+                        onClick={() => startConversationMutation.mutate(profile)}
+                        disabled={startConversationMutation.isPending}
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Message
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="likes">
+            {userProfile?.is_premium ? (
+              // Premium users can see who liked them
+              likesReceived.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="w-20 h-20 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Heart className="w-10 h-10 text-[#C46A4A]" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-3">No Likes Yet</h2>
+                  <p className="text-gray-600">
+                    When someone likes your profile, they'll appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {likesReceived.map((profile) => (
+                    <div
+                      key={profile.id}
+                      className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                    >
+                      <div className="aspect-square relative">
+                        {profile.photos?.[0] ? (
+                          <img
+                            src={profile.photos[0]}
+                            alt={profile.first_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#C46A4A]/20 to-[#D4A853]/20 flex items-center justify-center">
+                            <span className="text-3xl font-bold text-[#C46A4A]">
+                              {profile.first_name?.[0]?.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                          <h3 className="font-bold">{profile.first_name}, {profile.age}</h3>
+                          <p className="text-sm text-white/80">{profile.city}</p>
+                        </div>
+                      </div>
+
+                      <div className="p-3">
+                        <Link to={`/browse`}>
+                          <Button className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
+                            <Heart className="w-4 h-4 mr-2" />
+                            View Profile
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              // Free users see upgrade prompt
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Heart className="w-10 h-10 text-[#C46A4A]" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3">
+                  {likesReceived.length} {likesReceived.length === 1 ? 'person liked' : 'people liked'} you
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Upgrade to Premium to see who likes you
+                </p>
+                <Link to={createPageUrl('Membership')}>
+                  <Button className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
+                    Upgrade to Premium
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="sent">
+            {likesSent.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Star className="w-10 h-10 text-gray-300" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3">
+                  You haven't liked anyone yet
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Start browsing to find your match!
+                </p>
+                <Link to={createPageUrl('Browse')}>
+                  <Button className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
+                    Browse Profiles
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Star className="w-10 h-10 text-gray-300" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3">
+                  You've liked {likesSent.length} {likesSent.length === 1 ? 'profile' : 'profiles'}
+                </h2>
+                <p className="text-gray-600">
+                  Keep swiping to make more connections!
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
-    </div>
-  );
-}
-
-// Match Card Component
-function MatchCard({ match, userProfile, onMessage }) {
-  const compatibility = userProfile
-    ? calculateCompatibility(userProfile, match)
-    : null;
-
-  const goalLabels = {
-    dil_se_casual: "Dil-Se Casual",
-    vibe_check: "Vibe Check",
-    lets_see: "Let's See",
-    light_dating: "Light Dating",
-    real_connection: "Real Connection",
-    long_term_serious: "Long-Term Serious",
-    shaadi_ready: "Shaadi-Ready"
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-      {/* Photo */}
-      <div className="relative aspect-square">
-        {match.photos?.[0] ? (
-          <img
-            src={match.photos[0]}
-            alt={match.first_name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#C46A4A]/20 to-[#D4A853]/20 flex items-center justify-center">
-            <span className="text-5xl font-bold text-[#C46A4A]/50">
-              {match.first_name?.[0]?.toUpperCase()}
-            </span>
-          </div>
-        )}
-
-        {/* Compatibility badge */}
-        {compatibility && (
-          <div className="absolute top-3 right-3 bg-gradient-to-r from-[#C46A4A] to-[#D4A853] text-white px-2 py-1 rounded-full text-xs font-medium">
-            {compatibility}% Match
-          </div>
-        )}
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-        {/* Info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-          <h3 className="text-xl font-bold">
-            {match.first_name}, {match.age}
-          </h3>
-          <div className="flex items-center gap-1 text-sm text-white/80">
-            <MapPin className="w-3 h-3" />
-            {match.city}, {match.state}
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="p-4 space-y-3">
-        {match.relationship_goal && (
-          <Badge className="bg-[#C46A4A]/10 text-[#C46A4A] border-0">
-            <Heart className="w-3 h-3 mr-1" />
-            {goalLabels[match.relationship_goal] || match.relationship_goal}
-          </Badge>
-        )}
-
-        <Button
-          className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
-          onClick={() => onMessage(match)}
-        >
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Send Message
-        </Button>
-      </div>
     </div>
   );
 }
