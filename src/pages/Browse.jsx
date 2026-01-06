@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useMatchAction } from '@/hooks/useBrowse';
@@ -215,9 +215,9 @@ export default function Browse() {
     }
   };
 
-  const handleSendMessage = (profile) => {
+  const handleSendMessage = () => {
     setShowMatchModal(false);
-    navigate(`/chat/${profile.id}`);
+    navigate('/messages');
   };
 
   return (
@@ -608,7 +608,7 @@ export default function Browse() {
                 key={profile.id}
                 className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group flex flex-col"
               >
-                <div className="aspect-[3/4] relative overflow-hidden">
+                <Link to={`/view-profile/${profile.id}`} className="aspect-[3/4] relative overflow-hidden block">
                   {profile.photos?.[0] ? (
                     <img
                       src={profile.photos[0]}
@@ -639,7 +639,7 @@ export default function Browse() {
                       {profile.city}
                     </div>
                   </div>
-                </div>
+                </Link>
 
                 {/* Tags and Like Button */}
                 <div className="p-3 flex flex-col flex-grow">

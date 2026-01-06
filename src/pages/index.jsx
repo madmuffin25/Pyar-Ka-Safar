@@ -22,13 +22,13 @@ import Profile from "./Profile";
 
 import Messages from "./Messages";
 
-import Chat from "./Chat";
-
 import EditProfile from "./EditProfile";
 
 import TermsOfService from "./TermsOfService";
 
 import RecommendedProfiles from "./RecommendedProfiles";
+
+import ViewProfile from "./ViewProfile";
 
 import Login from "./Login";
 
@@ -71,6 +71,8 @@ const PAGES = {
 
     RecommendedProfiles: RecommendedProfiles,
 
+    ViewProfile: ViewProfile,
+
     Login: Login,
 
 }
@@ -79,7 +81,21 @@ function _getCurrentPage(url) {
     if (url.endsWith('/')) {
         url = url.slice(0, -1);
     }
-    let urlLastPart = url.split('/').pop();
+
+    // Handle routes with parameters (e.g., /view-profile/:userId)
+    const urlParts = url.split('/').filter(Boolean);
+
+    // Check for known parameterized routes
+    if (urlParts.length >= 2) {
+        const routeBase = urlParts[urlParts.length - 2]; // e.g., "view-profile" from "/view-profile/123"
+        const normalizedRouteBase = routeBase.toLowerCase().replace(/-/g, '');
+        const matchedPage = Object.keys(PAGES).find(page => page.toLowerCase() === normalizedRouteBase);
+        if (matchedPage) {
+            return matchedPage;
+        }
+    }
+
+    let urlLastPart = urlParts[urlParts.length - 1] || '';
     if (urlLastPart.includes('?')) {
         urlLastPart = urlLastPart.split('?')[0];
     }
@@ -121,9 +137,9 @@ function PagesContent() {
                 <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-                <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
                 <Route path="/recommended-profiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
+                <Route path="/view-profile/:userId" element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
 
                 {/* Payment result routes */}
                 <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />

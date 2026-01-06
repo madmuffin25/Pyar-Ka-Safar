@@ -124,9 +124,9 @@ export default function RecommendedProfiles() {
     }
   };
 
-  const handleSendMessage = (profile) => {
+  const handleSendMessage = () => {
     setShowMatchModal(false);
-    navigate(`/chat/${profile.id}`);
+    navigate('/messages');
   };
 
   // Filter out already liked profiles
@@ -205,7 +205,7 @@ export default function RecommendedProfiles() {
                     key={profile.id}
                     className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group flex flex-col"
                   >
-                    <div className="aspect-[3/4] relative overflow-hidden">
+                    <Link to={`/view-profile/${profile.id}`} className="aspect-[3/4] relative overflow-hidden block">
                       {profile.photos?.[0] ? (
                         <img
                           src={profile.photos[0]}
@@ -246,7 +246,7 @@ export default function RecommendedProfiles() {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Tags and Like Button */}
                     <div className="p-3 flex flex-col flex-grow">

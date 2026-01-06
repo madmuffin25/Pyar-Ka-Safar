@@ -65,15 +65,27 @@ export function useMatchAction() {
 
         if (mutualError) throw mutualError;
 
+        // If mutual match, automatically create a conversation
+        if (isMutual) {
+          await supabase.rpc('get_or_create_conversation', {
+            p_user1: user.id,
+            p_user2: targetUserId
+          });
+        }
+
         return { match: data, isMutualMatch: isMutual };
       }
 
       return { match: data, isMutualMatch: false };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       // Don't invalidate browsableProfiles - managed locally in Browse.jsx for smooth UX
       // Only invalidate mutualMatches to update Matches page
       queryClient.invalidateQueries({ queryKey: ['mutualMatches'] });
+      // If mutual match, also invalidate conversations so the new conversation appears
+      if (result?.isMutualMatch) {
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      }
     }
   });
 }

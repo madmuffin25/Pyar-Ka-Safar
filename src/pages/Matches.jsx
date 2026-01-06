@@ -1,14 +1,21 @@
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useMutualMatches, useLikesReceived, useLikesSent } from '@/hooks/useMatches';
 import { useMatchAction } from '@/hooks/useBrowse';
 import AuthHeader from '@/components/layout/AuthHeader';
-import { Heart, MessageCircle, Loader2, Users, Star } from 'lucide-react';
+import { Heart, MessageCircle, Loader2, Users, Star, MapPin } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+
+const formatLabel = (value) => {
+  if (!value) return '';
+  return value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
 
 export default function Matches() {
   const { user } = useAuth();
@@ -62,41 +69,6 @@ export default function Matches() {
 
   const isLoading = loadingMatches || loadingReceived || loadingSent;
 
-  // Start or open conversation
-  const startConversationMutation = useMutation({
-    mutationFn: async (targetProfile) => {
-      // Check if conversation already exists
-      const { data: existingConv } = await supabase
-        .from('conversations')
-        .select('id')
-        .or(`and(participant_1.eq.${user.id},participant_2.eq.${targetProfile.matched_user_id || targetProfile.id}),and(participant_1.eq.${targetProfile.matched_user_id || targetProfile.id},participant_2.eq.${user.id})`)
-        .maybeSingle();
-
-      if (existingConv) {
-        return existingConv;
-      }
-
-      // Create new conversation
-      const { data, error } = await supabase
-        .from('conversations')
-        .insert({
-          participant_1: user.id,
-          participant_2: targetProfile.matched_user_id || targetProfile.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_, targetProfile) => {
-      navigate(`/chat/${targetProfile.matched_user_id || targetProfile.id}`);
-    },
-    onError: () => {
-      toast.error('Failed to start conversation');
-    }
-  });
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white flex items-center justify-center">
@@ -146,22 +118,22 @@ export default function Matches() {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                 {matches.map((profile) => (
                   <div
                     key={profile.match_id}
-                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group flex flex-col"
                   >
-                    <div className="aspect-square relative">
+                    <Link to={`/view-profile/${profile.matched_user_id}`} className="aspect-[3/4] relative overflow-hidden block">
                       {profile.photos?.[0] ? (
                         <img
                           src={profile.photos[0]}
                           alt={profile.first_name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-[#C46A4A]/20 to-[#D4A853]/20 flex items-center justify-center">
-                          <span className="text-3xl font-bold text-[#C46A4A]">
+                          <span className="text-4xl font-bold text-[#C46A4A]">
                             {profile.first_name?.[0]?.toUpperCase()}
                           </span>
                         </div>
@@ -170,18 +142,43 @@ export default function Matches() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                       <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                        <h3 className="font-bold">{profile.first_name}, {profile.age}</h3>
-                        <p className="text-sm text-white/80">{profile.city}</p>
+                        <h3 className="font-bold text-lg">{profile.first_name}, {profile.age}</h3>
+                        {profile.occupation && (
+                          <p className="text-sm text-white/90 truncate">{profile.occupation}</p>
+                        )}
+                        {profile.city && (
+                          <div className="flex items-center gap-1 text-sm text-white/80">
+                            <MapPin className="w-3 h-3" />
+                            {profile.city}
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    </Link>
 
-                    <div className="p-3">
+                    {/* Tags and Message Button */}
+                    <div className="p-3 flex flex-col flex-grow">
+                      <div className="flex flex-wrap gap-1">
+                        {profile.ethnicity && (
+                          <Badge variant="secondary" className="text-xs bg-[#C46A4A]/10 text-[#C46A4A]">
+                            {formatLabel(profile.ethnicity)}
+                          </Badge>
+                        )}
+                        {profile.relationship_goal && (
+                          <Badge variant="secondary" className="text-xs bg-[#D4A853]/10 text-[#D4A853]">
+                            {formatLabel(profile.relationship_goal)}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Spacer to push button to bottom */}
+                      <div className="flex-grow min-h-3" />
+
                       <Button
+                        size="sm"
                         className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
-                        onClick={() => startConversationMutation.mutate(profile)}
-                        disabled={startConversationMutation.isPending}
+                        onClick={() => navigate('/messages')}
                       >
-                        <MessageCircle className="w-4 h-4 mr-2" />
+                        <MessageCircle className="w-4 h-4 mr-1" />
                         Message
                       </Button>
                     </div>
@@ -205,22 +202,22 @@ export default function Matches() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                   {pendingLikes.map((profile) => (
                     <div
                       key={profile.id}
-                      className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                      className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group flex flex-col"
                     >
-                      <div className="aspect-square relative">
+                      <Link to={`/view-profile/${profile.id}`} className="aspect-[3/4] relative overflow-hidden block">
                         {profile.photos?.[0] ? (
                           <img
                             src={profile.photos[0]}
                             alt={profile.first_name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#C46A4A]/20 to-[#D4A853]/20 flex items-center justify-center">
-                            <span className="text-3xl font-bold text-[#C46A4A]">
+                            <span className="text-4xl font-bold text-[#C46A4A]">
                               {profile.first_name?.[0]?.toUpperCase()}
                             </span>
                           </div>
@@ -229,18 +226,44 @@ export default function Matches() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                          <h3 className="font-bold">{profile.first_name}, {profile.age}</h3>
-                          <p className="text-sm text-white/80">{profile.city}</p>
+                          <h3 className="font-bold text-lg">{profile.first_name}, {profile.age}</h3>
+                          {profile.occupation && (
+                            <p className="text-sm text-white/90 truncate">{profile.occupation}</p>
+                          )}
+                          {profile.city && (
+                            <div className="flex items-center gap-1 text-sm text-white/80">
+                              <MapPin className="w-3 h-3" />
+                              {profile.city}
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      </Link>
 
-                      <div className="p-3">
+                      {/* Tags and Like Back Button */}
+                      <div className="p-3 flex flex-col flex-grow">
+                        <div className="flex flex-wrap gap-1">
+                          {profile.ethnicity && (
+                            <Badge variant="secondary" className="text-xs bg-[#C46A4A]/10 text-[#C46A4A]">
+                              {formatLabel(profile.ethnicity)}
+                            </Badge>
+                          )}
+                          {profile.relationship_goal && (
+                            <Badge variant="secondary" className="text-xs bg-[#D4A853]/10 text-[#D4A853]">
+                              {formatLabel(profile.relationship_goal)}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Spacer to push button to bottom */}
+                        <div className="flex-grow min-h-3" />
+
                         <Button
+                          size="sm"
                           className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
                           onClick={() => handleLikeBack(profile)}
                           disabled={matchAction.isPending}
                         >
-                          <Heart className="w-4 h-4 mr-2" />
+                          <Heart className="w-4 h-4 mr-1" />
                           Like Back
                         </Button>
                       </div>
