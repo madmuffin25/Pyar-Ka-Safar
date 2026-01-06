@@ -59,8 +59,9 @@ export default function HeroSection() {
               </Link>
             </div>
             
+{/*
             {/* Trust Indicators */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-sm text-gray-500">
+            {/* <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span>Verified Profiles</span>
@@ -74,6 +75,7 @@ export default function HeroSection() {
                 <span>100% Secure</span>
               </div>
             </div>
+*/}
           </div>
           
           {/* Hero Image Grid */}

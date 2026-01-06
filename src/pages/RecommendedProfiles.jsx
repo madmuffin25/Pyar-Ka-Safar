@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/api/supabaseClient';
 import { useRecommendedProfiles } from '@/hooks/useRecommendations';
+import { useMatchAction } from '@/hooks/useBrowse';
 import { useUnreadCount } from '@/hooks/useMessages';
+import MatchModal from '@/components/dashboard/MatchModal';
 import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, MapPin } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from 'sonner';
+
+const FREE_DAILY_LIKE_LIMIT = 5;
 
 const formatLabel = (value) => {
   if (!value) return '';
@@ -14,8 +21,13 @@ const formatLabel = (value) => {
 };
 
 export default function RecommendedProfiles() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const [likedProfiles, setLikedProfiles] = useState(new Set());
+  const [dailyLikeCount, setDailyLikeCount] = useState(0);
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchedProfile, setMatchedProfile] = useState(null);
 
   // Fetch recommended profiles
   const { data = { profiles: [], userProfile: null }, isLoading } = useRecommendedProfiles(20);
@@ -24,10 +36,109 @@ export default function RecommendedProfiles() {
   // Get unread message count
   const { data: unreadCount = 0 } = useUnreadCount();
 
+  // Match action mutation
+  const matchAction = useMatchAction();
+
+  // Get already liked profiles
+  const { data: existingLikes = [] } = useQuery({
+    queryKey: ['existingLikes', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('matches')
+        .select('target_user_id')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data.map(m => m.target_user_id);
+    },
+    enabled: !!user
+  });
+
+  // Update liked profiles set when data loads
+  useEffect(() => {
+    if (existingLikes.length > 0) {
+      setLikedProfiles(new Set(existingLikes));
+    }
+  }, [existingLikes]);
+
+  // Count today's likes for free users
+  useEffect(() => {
+    const countTodayLikes = async () => {
+      if (!user || userProfile?.is_premium) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { count } = await supabase
+        .from('matches')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('action', 'like')
+        .gte('created_at', today.toISOString());
+
+      setDailyLikeCount(count || 0);
+    };
+
+    countTodayLikes();
+  }, [user, userProfile?.is_premium]);
+
+  const handleLike = async (profile) => {
+    // Check like limit for free users
+    if (!userProfile?.is_premium && dailyLikeCount >= FREE_DAILY_LIKE_LIMIT) {
+      toast.error("You've reached your daily like limit", {
+        description: "Upgrade to Premium for unlimited likes!",
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate('/membership')
+        }
+      });
+      return;
+    }
+
+    // Optimistic update
+    setLikedProfiles(prev => new Set([...prev, profile.id]));
+
+    try {
+      const result = await matchAction.mutateAsync({
+        targetUserId: profile.id,
+        action: 'like'
+      });
+
+      // Increment local like count for free users
+      if (!userProfile?.is_premium) {
+        setDailyLikeCount(prev => prev + 1);
+      }
+
+      if (result.isMutualMatch) {
+        setMatchedProfile(profile);
+        setShowMatchModal(true);
+      } else {
+        toast.success('Profile liked!');
+      }
+    } catch (error) {
+      // Rollback on error
+      setLikedProfiles(prev => {
+        const next = new Set(prev);
+        next.delete(profile.id);
+        return next;
+      });
+      toast.error('Failed to like profile');
+      console.error(error);
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
+
+  const handleSendMessage = (profile) => {
+    setShowMatchModal(false);
+    navigate(`/chat/${profile.id}`);
+  };
+
+  // Filter out already liked profiles
+  const availableProfiles = recommendedProfiles.filter(p => !likedProfiles.has(p.id));
 
   if (isLoading) {
     return (
@@ -108,7 +219,7 @@ export default function RecommendedProfiles() {
           </p>
         </div>
 
-        {recommendedProfiles.length === 0 ? (
+        {availableProfiles.length === 0 ? (
           <div className="text-center py-20">
             <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-900 mb-2">No recommendations yet</h3>
@@ -123,24 +234,35 @@ export default function RecommendedProfiles() {
           </div>
         ) : (
           <>
-            <div className="mb-6">
+            <div className="flex items-center justify-between mb-6">
               <p className="text-gray-600">
-                {recommendedProfiles.length} {recommendedProfiles.length === 1 ? 'profile' : 'profiles'} recommended for you
+                {availableProfiles.length} {availableProfiles.length === 1 ? 'profile' : 'profiles'} recommended for you
               </p>
+
+              {/* Like counter for free users */}
+              {userProfile && !userProfile.is_premium && (
+                <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+                  dailyLikeCount >= FREE_DAILY_LIKE_LIMIT
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-[#C46A4A]/10 text-[#C46A4A]'
+                }`}>
+                  <Heart className="w-4 h-4 inline mr-1" />
+                  {FREE_DAILY_LIKE_LIMIT - dailyLikeCount} likes left today
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-              {recommendedProfiles.map((profile) => {
+              {availableProfiles.map((profile) => {
                 // Calculate shared interests
                 const sharedInterests = profile.interests && userProfile?.interests
                   ? profile.interests.filter(i => userProfile.interests?.includes(i))
                   : [];
 
                 return (
-                  <Link
+                  <div
                     key={profile.id}
-                    to={createPageUrl('Dashboard')}
-                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group"
+                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group flex flex-col"
                   >
                     <div className="aspect-[3/4] relative overflow-hidden">
                       {profile.photos?.[0] ? (
@@ -173,6 +295,9 @@ export default function RecommendedProfiles() {
                         <h3 className="font-bold text-lg">
                           {profile.first_name}, {profile.age}
                         </h3>
+                        {profile.occupation && (
+                          <p className="text-sm text-white/90 truncate">{profile.occupation}</p>
+                        )}
                         {profile.city && (
                           <div className="flex items-center gap-1 text-sm text-white/80">
                             <MapPin className="w-3 h-3" />
@@ -182,8 +307,8 @@ export default function RecommendedProfiles() {
                       </div>
                     </div>
 
-                    {/* Tags */}
-                    <div className="p-3 space-y-2">
+                    {/* Tags and Like Button */}
+                    <div className="p-3 flex flex-col flex-grow">
                       <div className="flex flex-wrap gap-1">
                         {profile.ethnicity && (
                           <Badge variant="secondary" className="text-xs bg-[#C46A4A]/10 text-[#C46A4A]">
@@ -199,18 +324,41 @@ export default function RecommendedProfiles() {
 
                       {/* Shared interests count */}
                       {sharedInterests.length > 0 && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 mt-2">
                           {sharedInterests.length} shared {sharedInterests.length === 1 ? 'interest' : 'interests'}
                         </p>
                       )}
+
+                      {/* Spacer to push button to bottom */}
+                      <div className="flex-grow min-h-3" />
+
+                      {/* Like Button - always at bottom */}
+                      <Button
+                        size="sm"
+                        onClick={() => handleLike(profile)}
+                        disabled={matchAction.isPending}
+                        className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
+                      >
+                        <Heart className="w-4 h-4 mr-1" />
+                        Like
+                      </Button>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
           </>
         )}
       </main>
+
+      {/* Match Modal */}
+      <MatchModal
+        isOpen={showMatchModal}
+        onClose={() => setShowMatchModal(false)}
+        matchedProfile={matchedProfile}
+        currentUser={userProfile}
+        onSendMessage={handleSendMessage}
+      />
     </div>
   );
 }

@@ -29,12 +29,14 @@ const values = [
   }
 ];
 
+/* Stats temporarily commented out
 const stats = [
   { number: "50,000+", label: "Active Members" },
   { number: "10,000+", label: "Successful Matches" },
   { number: "2,000+", label: "Marriages" },
   { number: "98%", label: "Satisfaction Rate" }
 ];
+*/
 
 export default function About() {
   return (
@@ -130,7 +132,7 @@ export default function About() {
         </div>
       </section>
       
-      {/* Stats Section */}
+      {/* Stats Section - temporarily commented out
       <section className="py-20 lg:py-28 bg-gradient-to-r from-[#8B2635] via-[#C46A4A] to-[#D4A853]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
@@ -143,6 +145,7 @@ export default function About() {
           </div>
         </div>
       </section>
+      */}
       
       {/* CTA Section */}
       <section className="py-20 lg:py-28">
