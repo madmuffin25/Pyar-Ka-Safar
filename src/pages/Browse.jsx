@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useMatchAction } from '@/hooks/useBrowse';
-import { useUnreadCount } from '@/hooks/useMessages';
 import MatchModal from '@/components/dashboard/MatchModal';
-import { Heart, Search, SlidersHorizontal, MapPin, User, MessageCircle, LogOut, Loader2, Sparkles } from 'lucide-react';
+import AuthHeader from '@/components/layout/AuthHeader';
+import { Heart, Search, SlidersHorizontal, MapPin, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +24,7 @@ const formatLabel = (value) => {
 };
 
 export default function Browse() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -118,9 +117,6 @@ export default function Browse() {
 
     countTodayLikes();
   }, [user, currentUserProfile?.is_premium]);
-
-  // Get unread message count
-  const { data: unreadCount = 0 } = useUnreadCount();
 
   // Match action mutation
   const matchAction = useMatchAction();
@@ -219,11 +215,6 @@ export default function Browse() {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
-
   const handleSendMessage = (profile) => {
     setShowMatchModal(false);
     navigate(`/chat/${profile.id}`);
@@ -231,61 +222,10 @@ export default function Browse() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">PyarKaSafar</span>
-            </Link>
-
-            <nav className="flex items-center gap-2">
-              <Link to={createPageUrl('Dashboard')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Heart className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('RecommendedProfiles')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Sparkles className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10">
-                <Search className="w-5 h-5 text-[#C46A4A]" />
-              </Button>
-              <Link to={createPageUrl('Messages')}>
-                <Button variant="ghost" size="icon" className="rounded-full relative">
-                  <MessageCircle className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C46A4A] text-white text-xs rounded-full flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Profile')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <AuthHeader />
 
       {/* Search and Filters */}
-      <div className="sticky top-[73px] z-40 bg-white/80 backdrop-blur-lg border-b border-gray-100 py-4">
+      <div className="bg-white/80 backdrop-blur-lg border-b border-gray-100 py-4">
         <div className="container mx-auto px-4">
           <div className="flex gap-4 items-center">
             <div className="relative flex-1">

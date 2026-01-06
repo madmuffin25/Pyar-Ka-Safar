@@ -4,11 +4,12 @@ import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Heart, Search, User, MessageCircle, LogOut, Loader2, Camera, Edit2, MapPin, GraduationCap, Sparkles, Crown } from 'lucide-react';
+import { Loader2, Camera, Edit2, MapPin, GraduationCap, Crown, Heart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
+import AuthHeader from '@/components/layout/AuthHeader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,7 @@ const formatLabel = (value) => {
 export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   // Get current user's profile
   const { data: profile, isLoading } = useQuery({
@@ -104,11 +105,6 @@ export default function Profile() {
     toggleVisibilityMutation.mutate(!profile.is_hidden);
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white flex items-center justify-center">
@@ -144,50 +140,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">PyarKaSafar</span>
-            </Link>
-
-            <nav className="flex items-center gap-2">
-              <Link to={createPageUrl('Dashboard')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Heart className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('RecommendedProfiles')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Sparkles className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Browse')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Search className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Matches')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <MessageCircle className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <AuthHeader />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-2xl">

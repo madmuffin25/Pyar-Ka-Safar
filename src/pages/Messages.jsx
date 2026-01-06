@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Mail, Loader2, ArrowLeft } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { Mail, Loader2, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   useConversations,
@@ -14,10 +11,10 @@ import {
   useMarkAsRead
 } from '@/hooks/useMessages';
 import ChatWindow from '@/components/messaging/ChatWindow';
+import AuthHeader from '@/components/layout/AuthHeader';
 
 export default function Messages() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState(null);
 
   // Fetch conversations
@@ -42,11 +39,6 @@ export default function Messages() {
       markAsRead.mutate(selectedConversation.conversation_id);
     }
   }, [selectedConversation?.conversation_id]);
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
 
   const handleSelectConversation = (conv) => {
     setSelectedConversation(conv);
@@ -74,79 +66,15 @@ export default function Messages() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Mobile back button when in chat view */}
-            {selectedConversation && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full md:hidden"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            )}
-
-            <Link to={createPageUrl('Home')} className={`flex items-center gap-2 ${selectedConversation ? 'hidden md:flex' : ''}`}>
-              <div className="w-10 h-10 bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">PyarKaSafar</span>
-            </Link>
-
-            {/* Show conversation name on mobile when selected */}
-            {selectedConversation && (
-              <div className="flex items-center gap-2 md:hidden">
-                <img
-                  src={selectedConversation.other_user_photo || `https://ui-avatars.com/api/?name=${selectedConversation.other_user_name}&background=C46A4A&color=fff`}
-                  alt={selectedConversation.other_user_name}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <span className="font-semibold">{selectedConversation.other_user_name}</span>
-              </div>
-            )}
-
-            <nav className="flex items-center gap-2">
-              <Link to={createPageUrl('Dashboard')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Heart className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('RecommendedProfiles')} className="hidden sm:inline-flex">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Sparkles className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Browse')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Search className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Messages')}>
-                <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10">
-                  <MessageCircle className="w-5 h-5 text-[#C46A4A]" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Profile')} className="hidden sm:inline-flex">
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full hidden sm:inline-flex"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <AuthHeader
+        mobileBackButton={selectedConversation ? { show: true, onClick: handleBack } : undefined}
+        mobileTitle={selectedConversation ? {
+          show: true,
+          photo: selectedConversation.other_user_photo,
+          name: selectedConversation.other_user_name
+        } : undefined}
+        hideLogo={!!selectedConversation}
+      />
 
       {/* Main Content */}
       <main className="container mx-auto h-[calc(100vh-73px)]">

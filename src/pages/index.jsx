@@ -84,7 +84,11 @@ function _getCurrentPage(url) {
         urlLastPart = urlLastPart.split('?')[0];
     }
 
-    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === urlLastPart.toLowerCase());
+    // Convert kebab-case URL to match PascalCase page names
+    // e.g., "recommended-profiles" -> "recommendedprofiles" for comparison
+    const normalizedUrl = urlLastPart.toLowerCase().replace(/-/g, '');
+
+    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === normalizedUrl);
     return pageName || Object.keys(PAGES)[0];
 }
 
@@ -103,7 +107,7 @@ function PagesContent() {
                 <Route path="/membership" element={<Membership />} />
                 <Route path="/safety" element={<Safety />} />
                 <Route path="/faq" element={<FAQ />} />
-                <Route path="/termsofservice" element={<TermsOfService />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
 
                 {/* Public only routes - redirect to dashboard if logged in */}
                 <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
@@ -118,8 +122,8 @@ function PagesContent() {
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
                 <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-                <Route path="/editprofile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-                <Route path="/recommendedprofiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
+                <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                <Route path="/recommended-profiles" element={<ProtectedRoute><RecommendedProfiles /></ProtectedRoute>} />
 
                 {/* Payment result routes */}
                 <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />

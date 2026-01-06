@@ -6,9 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/api/supabaseClient';
 import { useRecommendedProfiles } from '@/hooks/useRecommendations';
 import { useMatchAction } from '@/hooks/useBrowse';
-import { useUnreadCount } from '@/hooks/useMessages';
 import MatchModal from '@/components/dashboard/MatchModal';
-import { Heart, User, MessageCircle, Sparkles, Search, LogOut, Loader2, MapPin } from 'lucide-react';
+import AuthHeader from '@/components/layout/AuthHeader';
+import { Heart, Sparkles, Loader2, MapPin } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ const formatLabel = (value) => {
 };
 
 export default function RecommendedProfiles() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [likedProfiles, setLikedProfiles] = useState(new Set());
@@ -32,9 +32,6 @@ export default function RecommendedProfiles() {
   // Fetch recommended profiles
   const { data = { profiles: [], userProfile: null }, isLoading } = useRecommendedProfiles(20);
   const { profiles: recommendedProfiles, userProfile } = data;
-
-  // Get unread message count
-  const { data: unreadCount = 0 } = useUnreadCount();
 
   // Match action mutation
   const matchAction = useMatchAction();
@@ -127,11 +124,6 @@ export default function RecommendedProfiles() {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
-
   const handleSendMessage = (profile) => {
     setShowMatchModal(false);
     navigate(`/chat/${profile.id}`);
@@ -150,58 +142,7 @@ export default function RecommendedProfiles() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F9F2EB] to-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to={createPageUrl('Home')} className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 hidden sm:block">PyarKaSafar</span>
-            </Link>
-
-            <nav className="flex items-center gap-2">
-              <Link to={createPageUrl('Dashboard')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Heart className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button variant="ghost" size="icon" className="rounded-full bg-[#C46A4A]/10">
-                <Sparkles className="w-5 h-5 text-[#C46A4A]" />
-              </Button>
-              <Link to={createPageUrl('Browse')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Search className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Messages')}>
-                <Button variant="ghost" size="icon" className="rounded-full relative">
-                  <MessageCircle className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C46A4A] text-white text-xs rounded-full flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-              <Link to={createPageUrl('Profile')}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="w-5 h-5" />
-                </Button>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <AuthHeader />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
