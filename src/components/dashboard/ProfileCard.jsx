@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, X, MapPin, Sparkles, ChevronLeft, ChevronRight, Ban, Zap } from 'lucide-react';
+import { Heart, X, MapPin, Sparkles, ChevronLeft, ChevronRight, Ban, BadgeCheck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,11 +95,11 @@ export default function ProfileCard({ profile, onLike, onPass, onBlock, compatib
           </>
         )}
         
-        {/* Boosted Badge (top-left, aligned with compatibility badge) */}
-        {profile.is_premium && (
-          <div className="absolute top-4 left-4 bg-gradient-to-r from-[#D4A853] to-[#C46A4A] text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-medium shadow-lg">
-            <Zap className="w-4 h-4" />
-            Boosted
+        {/* Verified Badge (top-left) */}
+        {profile.is_verified && (
+          <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-500 to-green-500 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sm font-medium shadow-lg">
+            <BadgeCheck className="w-4 h-4" />
+            Verified
           </div>
         )}
 

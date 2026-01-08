@@ -6,7 +6,7 @@ import { supabase } from '@/api/supabaseClient';
 import { useMutualMatches, useLikesReceived, useLikesSent } from '@/hooks/useMatches';
 import { useMatchAction } from '@/hooks/useBrowse';
 import AuthHeader from '@/components/layout/AuthHeader';
-import { Heart, MessageCircle, Loader2, Users, Star, MapPin } from 'lucide-react';
+import { Heart, MessageCircle, Loader2, Users, Star, MapPin, BadgeCheck } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -139,6 +139,14 @@ export default function Matches() {
                         </div>
                       )}
 
+                      {/* Verified Badge (top-left) */}
+                      {profile.is_verified && (
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-green-500 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium shadow-lg">
+                          <BadgeCheck className="w-3 h-3" />
+                          Verified
+                        </div>
+                      )}
+
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                       <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -220,6 +228,14 @@ export default function Matches() {
                             <span className="text-4xl font-bold text-[#C46A4A]">
                               {profile.first_name?.[0]?.toUpperCase()}
                             </span>
+                          </div>
+                        )}
+
+                        {/* Verified Badge (top-left) */}
+                        {profile.is_verified && (
+                          <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-green-500 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium shadow-lg">
+                            <BadgeCheck className="w-3 h-3" />
+                            Verified
                           </div>
                         )}
 

@@ -23,7 +23,8 @@ import {
   Calendar,
   ArrowLeft,
   MessageCircle,
-  X
+  X,
+  BadgeCheck,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -316,7 +317,7 @@ export default function ViewProfile() {
 
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-bold text-gray-900">
                     {profile.first_name}, {profile.age}
                   </h1>
@@ -324,6 +325,12 @@ export default function ViewProfile() {
                     <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-[#C46A4A] to-[#D4A853] rounded-full">
                       <Crown className="w-3 h-3 text-white" />
                       <span className="text-xs font-medium text-white">Premium</span>
+                    </div>
+                  )}
+                  {profile.is_verified && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-500 to-green-500 rounded-full">
+                      <BadgeCheck className="w-3 h-3 text-white" />
+                      <span className="text-xs font-medium text-white">Verified</span>
                     </div>
                   )}
                 </div>

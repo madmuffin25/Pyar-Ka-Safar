@@ -12,7 +12,7 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   
   // Pages that don't need the header (they have their own)
-  const pagesWithoutHeader = ['Onboarding', 'Dashboard', 'Browse', 'Matches', 'Profile', 'RecommendedProfiles', 'EditProfile', 'Messages', 'Login', 'ViewProfile'];
+  const pagesWithoutHeader = ['Onboarding', 'Dashboard', 'Browse', 'Matches', 'Profile', 'RecommendedProfiles', 'EditProfile', 'Messages', 'Login', 'ViewProfile', 'Verification', 'VerificationComplete'];
   const showHeader = !pagesWithoutHeader.includes(currentPageName);
   
   const navLinks = [

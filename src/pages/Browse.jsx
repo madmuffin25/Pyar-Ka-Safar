@@ -6,7 +6,7 @@ import { supabase } from '@/api/supabaseClient';
 import { useMatchAction } from '@/hooks/useBrowse';
 import MatchModal from '@/components/dashboard/MatchModal';
 import AuthHeader from '@/components/layout/AuthHeader';
-import { Heart, Search, SlidersHorizontal, MapPin, Loader2 } from 'lucide-react';
+import { Heart, Search, SlidersHorizontal, MapPin, Loader2, Zap, BadgeCheck } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -620,6 +620,14 @@ export default function Browse() {
                       <span className="text-4xl font-bold text-[#C46A4A]">
                         {profile.first_name?.[0]?.toUpperCase()}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Verified Badge (top-left) */}
+                  {profile.is_verified && (
+                    <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-green-500 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium shadow-lg">
+                      <BadgeCheck className="w-3 h-3" />
+                      Verified
                     </div>
                   )}
 

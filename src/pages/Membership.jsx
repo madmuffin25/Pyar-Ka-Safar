@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, X, Crown, Star, Loader2, Calendar, CreditCard, ExternalLink } from 'lucide-react';
+import { Check, X, Crown, Star, Loader2, Calendar, CreditCard, ExternalLink, BadgeCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import MandalaPattern from '@/components/ui/MandalaPattern';
@@ -23,6 +23,7 @@ const plans = [
       { text: "Send up to 5 likes per day", included: true },
       { text: "Unlimited likes", included: false },
       { text: "Profile Boost", included: false },
+      { text: "Identity Verification", included: false },
     ]
   },
   {
@@ -40,6 +41,7 @@ const plans = [
       { text: "Browse profiles", included: true },
       { text: "Unlimited likes", included: true },
       { text: "Profile Boost", included: true },
+      { text: "Identity Verification", included: true },
     ]
   }
 ];
@@ -237,7 +239,8 @@ export default function Membership() {
                       "Unlimited likes",
                       "Profile Boost - appear first in Browse",
                       "Upload up to 6 photos",
-                      "Priority in search results"
+                      "Priority in search results",
+                      "Identity Verification with verified badge"
                     ].map((benefit, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">

@@ -72,6 +72,10 @@ export default function PaymentSuccess() {
                   <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                   Upload up to 6 photos
                 </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  Identity Verification with verified badge
+                </li>
               </ul>
             </div>
 

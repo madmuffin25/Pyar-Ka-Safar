@@ -36,6 +36,10 @@ import PaymentSuccess from "./PaymentSuccess";
 
 import PaymentCancel from "./PaymentCancel";
 
+import Verification from "./Verification";
+
+import VerificationComplete from "./VerificationComplete";
+
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import PublicOnlyRoute from "@/components/auth/PublicOnlyRoute";
 
@@ -75,7 +79,16 @@ const PAGES = {
 
     Login: Login,
 
+    Verification: Verification,
+
+    VerificationComplete: VerificationComplete,
+
 }
+
+// URL aliases for routes that don't match page names directly
+const URL_ALIASES = {
+    'verify': 'Verification',
+};
 
 function _getCurrentPage(url) {
     if (url.endsWith('/')) {
@@ -98,6 +111,11 @@ function _getCurrentPage(url) {
     let urlLastPart = urlParts[urlParts.length - 1] || '';
     if (urlLastPart.includes('?')) {
         urlLastPart = urlLastPart.split('?')[0];
+    }
+
+    // Check URL aliases first
+    if (URL_ALIASES[urlLastPart]) {
+        return URL_ALIASES[urlLastPart];
     }
 
     // Convert kebab-case URL to match PascalCase page names
@@ -144,6 +162,10 @@ function PagesContent() {
                 {/* Payment result routes */}
                 <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
                 <Route path="/payment/cancel" element={<PaymentCancel />} />
+
+                {/* Verification routes */}
+                <Route path="/verify" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
+                <Route path="/verification-complete" element={<ProtectedRoute><VerificationComplete /></ProtectedRoute>} />
             </Routes>
         </Layout>
     );

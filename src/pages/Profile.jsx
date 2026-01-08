@@ -4,7 +4,7 @@ import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Loader2, Camera, Edit2, MapPin, GraduationCap, Crown, Heart } from 'lucide-react';
+import { Loader2, Camera, Edit2, MapPin, GraduationCap, Crown, BadgeCheck, Heart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -175,7 +175,7 @@ export default function Profile() {
 
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-bold text-gray-900">
                     {profile.first_name}, {profile.age}
                   </h1>
@@ -183,6 +183,12 @@ export default function Profile() {
                     <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-[#C46A4A] to-[#D4A853] rounded-full">
                       <Crown className="w-3 h-3 text-white" />
                       <span className="text-xs font-medium text-white">Premium</span>
+                    </div>
+                  )}
+                  {profile.is_verified && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-500 to-green-500 rounded-full">
+                      <BadgeCheck className="w-3 h-3 text-white" />
+                      <span className="text-xs font-medium text-white">Verified</span>
                     </div>
                   )}
                 </div>
@@ -320,6 +326,24 @@ export default function Profile() {
               </Badge>
             )}
           </Link>
+
+          {/* Verification Link - Premium feature */}
+          {profile.is_premium && !profile.is_verified && (
+            <Link to="/verify" className="flex items-center justify-between p-4 border-b hover:bg-gray-50 transition-colors">
+              <span className="font-medium text-gray-900">Verify Your Identity</span>
+              <Badge className="bg-gradient-to-r from-blue-500 to-green-500 text-white">
+                <BadgeCheck className="w-3 h-3 mr-1" />
+                Premium
+              </Badge>
+            </Link>
+          )}
+          {profile.is_verified && (
+            <div className="flex items-center justify-between p-4 border-b bg-green-50">
+              <span className="font-medium text-gray-900">Identity Verified</span>
+              <BadgeCheck className="w-5 h-5 text-green-500" />
+            </div>
+          )}
+
           <Link to={createPageUrl('Safety')} className="flex items-center justify-between p-4 border-b hover:bg-gray-50 transition-colors">
             <span className="font-medium text-gray-900">Privacy & Safety</span>
           </Link>
