@@ -4,7 +4,7 @@ import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { ArrowLeft, Loader2, Trash2, Plus, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Plus, Save, MessageSquare, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,12 +108,28 @@ const languageOptions = [
 const FREE_PHOTO_LIMIT = 3;
 const PREMIUM_PHOTO_LIMIT = 6;
 
+const promptOptions = [
+  "One thing my friends love about me…",
+  "My weekend looks like…",
+  "A cultural tradition I love is…",
+  "Let's bond over…",
+  "My love language is…",
+  "A perfect date for me is…",
+  "I'm looking for someone who…",
+  "The way to my heart is…",
+  "My most controversial opinion is…",
+  "I geek out on…",
+  "Two truths and a lie…",
+  "I'll know it's love when…"
+];
+
 export default function EditProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [formData, setFormData] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState('');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['myProfile', user?.id],
@@ -226,6 +242,37 @@ export default function EditProfile() {
     }
   };
 
+  // Prompt functions
+  const prompts = formData?.prompts || [];
+  const availablePrompts = promptOptions.filter(
+    p => !prompts.some(existing => existing.question === p)
+  );
+
+  const addPrompt = () => {
+    if (selectedPrompt && prompts.length < 3) {
+      setFormData(prev => ({
+        ...prev,
+        prompts: [...(prev.prompts || []), { question: selectedPrompt, answer: '' }]
+      }));
+      setSelectedPrompt('');
+    }
+  };
+
+  const removePrompt = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      prompts: (prev.prompts || []).filter((_, i) => i !== index)
+    }));
+  };
+
+  const updatePromptAnswer = (index, answer) => {
+    setFormData(prev => {
+      const newPrompts = [...(prev.prompts || [])];
+      newPrompts[index] = { ...newPrompts[index], answer };
+      return { ...prev, prompts: newPrompts };
+    });
+  };
+
   const handleSave = () => {
     updateMutation.mutate(formData);
   };
@@ -272,9 +319,10 @@ export default function EditProfile() {
 
       <main className="container mx-auto px-4 py-6 max-w-2xl">
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="basic">Basic</TabsTrigger>
             <TabsTrigger value="photos">Photos</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="lifestyle">Lifestyle</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
           </TabsList>
@@ -511,6 +559,96 @@ export default function EditProfile() {
                   </label>
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Prompts */}
+          <TabsContent value="prompts">
+            <div className="bg-white rounded-2xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-[#C46A4A]/10 to-[#D4A853]/10 rounded-full flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-[#C46A4A]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Prompt Questions</h3>
+                  <p className="text-sm text-gray-500">Add 1-3 prompts to personalize your profile</p>
+                </div>
+              </div>
+
+              {/* Selected Prompts */}
+              {prompts.map((prompt, index) => (
+                <div key={index} className="bg-[#F9F2EB] rounded-xl p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <Label className="text-[#C46A4A] font-medium">{prompt.question}</Label>
+                    <button
+                      type="button"
+                      onClick={() => removePrompt(index)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <Textarea
+                    value={prompt.answer || ''}
+                    onChange={(e) => updatePromptAnswer(index, e.target.value)}
+                    placeholder="Write your answer..."
+                    className="bg-white border-0 resize-none focus:ring-2 focus:ring-[#C46A4A] rounded-lg"
+                    rows={3}
+                    maxLength={200}
+                  />
+                  <p className="text-xs text-gray-500 mt-2 text-right">
+                    {(prompt.answer || '').length}/200
+                  </p>
+                </div>
+              ))}
+
+              {/* Add New Prompt */}
+              {prompts.length < 3 && (
+                <div className="space-y-3">
+                  <Label className="text-gray-700">Choose a prompt to answer</Label>
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+                    {availablePrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => setSelectedPrompt(prompt)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                          selectedPrompt === prompt
+                            ? 'bg-gradient-to-r from-[#C46A4A] to-[#D4A853] text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedPrompt && (
+                    <Button
+                      type="button"
+                      onClick={addPrompt}
+                      variant="outline"
+                      className="w-full py-4 rounded-xl border-2 border-dashed border-[#C46A4A] text-[#C46A4A] hover:bg-[#C46A4A]/5"
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Add This Prompt
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {prompts.length === 0 && !selectedPrompt && (
+                <div className="text-center py-8 text-gray-500">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>Select a prompt above to get started</p>
+                </div>
+              )}
+
+              {prompts.length === 3 && (
+                <p className="text-center text-sm text-gray-500">
+                  You've added the maximum of 3 prompts
+                </p>
+              )}
             </div>
           </TabsContent>
 
