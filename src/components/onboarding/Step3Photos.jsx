@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, Camera, X, Plus, AlertCircle } from 'lucide-react';
 import { supabase } from '@/api/supabaseClient';
@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
 
 const FREE_PHOTO_LIMIT = 3;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
 export default function Step3Photos({ data, updateData, onNext, onBack }) {
   const [uploading, setUploading] = useState(false);
@@ -17,6 +18,15 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0 || !user) return;
+
+    // Validate file types
+    const invalidFiles = files.filter(file => !ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase()));
+    if (invalidFiles.length > 0) {
+      toast.error('Please use JPEG or PNG photos only', {
+        description: 'Other formats like WebP or HEIC are not supported.'
+      });
+      return;
+    }
 
     // Check if adding these files would exceed limit
     if (photos.length + files.length > maxPhotos) {
@@ -124,7 +134,7 @@ export default function Step3Photos({ data, updateData, onNext, onBack }) {
                   <label className={`flex flex-col items-center justify-center w-full h-full bg-gray-100 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-[#C46A4A] hover:bg-[#C46A4A]/5 transition-all ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                       onChange={handlePhotoUpload}
                       className="hidden"
                       disabled={uploading}

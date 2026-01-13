@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import {
   Loader2,
@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import AuthHeader from '@/components/layout/AuthHeader';
 
 export default function VerificationComplete() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [pollCount, setPollCount] = useState(0);
@@ -58,8 +57,9 @@ export default function VerificationComplete() {
   // Poll for updates if status is pending
   useEffect(() => {
     const isPending = latestSession?.status === 'created' ||
-                      latestSession?.status === 'started' ||
-                      latestSession?.status === 'submitted';
+                      latestSession?.status === 'not_started' ||
+                      latestSession?.status === 'in_progress' ||
+                      latestSession?.status === 'in_review';
 
     if (isPending && pollCount < 30) {
       const timer = setTimeout(() => {
@@ -119,19 +119,19 @@ export default function VerificationComplete() {
           icon: <XCircle className="w-12 h-12 text-white" />,
           iconBg: 'bg-gradient-to-r from-red-500 to-rose-500',
           title: 'Verification Declined',
-          description: 'Unfortunately, we couldn\'t verify your identity. Please try again with a clear photo of your ID.',
+          description: 'Unfortunately, we couldn\'t verify your identity. Please ensure your profile photo is clear and try again.',
           showTryAgain: true,
           status: 'declined',
         };
 
-      case 'resubmission_requested':
+      case 'in_review':
         return {
-          icon: <AlertCircle className="w-12 h-12 text-white" />,
+          icon: <Clock className="w-12 h-12 text-white" />,
           iconBg: 'bg-gradient-to-r from-yellow-500 to-orange-500',
-          title: 'Additional Information Needed',
-          description: 'We need you to resubmit your documents. Please make sure your ID is clearly visible.',
-          showTryAgain: true,
-          status: 'resubmission_requested',
+          title: 'Under Review',
+          description: 'Your verification is being reviewed by our team. This may take a few minutes.',
+          showPending: true,
+          status: 'in_review',
         };
 
       case 'expired':
@@ -155,14 +155,14 @@ export default function VerificationComplete() {
         };
 
       case 'created':
-      case 'started':
-      case 'submitted':
+      case 'not_started':
+      case 'in_progress':
       default:
         return {
           icon: <Loader2 className="w-12 h-12 text-white animate-spin" />,
           iconBg: 'bg-gradient-to-r from-blue-500 to-indigo-500',
           title: 'Verification in Progress',
-          description: 'We\'re reviewing your documents. This usually takes just a few minutes.',
+          description: 'We\'re processing your verification. This usually takes just a few seconds.',
           showPending: true,
           status: 'pending',
         };

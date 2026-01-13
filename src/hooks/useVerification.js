@@ -15,7 +15,7 @@ export function useVerificationStatus() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('is_verified, verified_at, veriff_session_id')
+        .select('is_verified, verified_at, verification_session_id')
         .eq('id', user.id)
         .single();
 
@@ -78,14 +78,14 @@ export function useLatestVerificationSession() {
 }
 
 /**
- * Hook to create a new Veriff verification session
+ * Hook to create a new Didit verification session
  */
-export function useCreateVeriffSession() {
+export function useCreateVerificationSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (callbackUrl) => {
-      const response = await supabase.functions.invoke('create-veriff-session', {
+      const response = await supabase.functions.invoke('create-didit-session', {
         body: { callbackUrl },
       });
 

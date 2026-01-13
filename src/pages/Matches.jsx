@@ -45,9 +45,10 @@ export default function Matches() {
   // Like back action
   const matchAction = useMatchAction();
 
-  // Filter out mutual matches from likesReceived (they already appear in Matches tab)
+  // Filter out mutual matches from likesReceived and likesSent (they already appear in Matches tab)
   const matchedUserIds = new Set(matches.map(m => m.matched_user_id));
   const pendingLikes = likesReceived.filter(profile => !matchedUserIds.has(profile.id));
+  const pendingSentLikes = likesSent.filter(profile => !matchedUserIds.has(profile.id));
 
   const handleLikeBack = (profile) => {
     matchAction.mutate(
@@ -97,7 +98,7 @@ export default function Matches() {
             </TabsTrigger>
             <TabsTrigger value="sent" className="flex items-center gap-2">
               <Star className="w-4 h-4" />
-              Sent ({likesSent.length})
+              Sent ({pendingSentLikes.length})
             </TabsTrigger>
           </TabsList>
 
@@ -206,7 +207,7 @@ export default function Matches() {
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 mb-3">No Likes Yet</h2>
                   <p className="text-gray-600">
-                    When someone likes your profile, they'll appear here
+                    When someone likes your profile, they&apos;ll appear here
                   </p>
                 </div>
               ) : (
@@ -309,17 +310,97 @@ export default function Matches() {
           </TabsContent>
 
           <TabsContent value="sent">
-            <div className="text-center py-20">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Star className="w-10 h-10 text-gray-300" />
+            {pendingSentLikes.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Star className="w-10 h-10 text-gray-300" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3">No Likes Sent Yet</h2>
+                <p className="text-gray-600 mb-6">
+                  Start swiping to find your perfect match!
+                </p>
+                <Link to={createPageUrl('Browse')}>
+                  <Button className="bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full">
+                    Browse Profiles
+                  </Button>
+                </Link>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">
-                You've liked {likesSent.length} profiles
-              </h2>
-              <p className="text-gray-600">
-                Keep swiping to make more connections!
-              </p>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+                {pendingSentLikes.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow group flex flex-col"
+                  >
+                    <Link to={`/view-profile/${profile.id}`} className="aspect-[3/4] relative overflow-hidden block">
+                      {profile.photos?.[0] ? (
+                        <img
+                          src={profile.photos[0]}
+                          alt={profile.first_name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#C46A4A]/20 to-[#D4A853]/20 flex items-center justify-center">
+                          <span className="text-4xl font-bold text-[#C46A4A]">
+                            {profile.first_name?.[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Verified Badge (top-left) */}
+                      {profile.is_verified && (
+                        <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-green-500 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-medium shadow-lg">
+                          <BadgeCheck className="w-3 h-3" />
+                          Verified
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                        <h3 className="font-bold text-lg">{profile.first_name}, {profile.age}</h3>
+                        {profile.occupation && (
+                          <p className="text-sm text-white/90 truncate">{profile.occupation}</p>
+                        )}
+                        {profile.city && (
+                          <div className="flex items-center gap-1 text-sm text-white/80">
+                            <MapPin className="w-3 h-3" />
+                            {profile.city}
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+
+                    {/* Tags and View Profile Button */}
+                    <div className="p-3 flex flex-col flex-grow">
+                      <div className="flex flex-wrap gap-1">
+                        {profile.ethnicity && (
+                          <Badge variant="secondary" className="text-xs bg-[#C46A4A]/10 text-[#C46A4A]">
+                            {formatLabel(profile.ethnicity)}
+                          </Badge>
+                        )}
+                        {profile.relationship_goal && (
+                          <Badge variant="secondary" className="text-xs bg-[#D4A853]/10 text-[#D4A853]">
+                            {formatLabel(profile.relationship_goal)}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Spacer to push button to bottom */}
+                      <div className="flex-grow min-h-3" />
+
+                      <Button
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-[#C46A4A] to-[#8B2635] rounded-full"
+                        onClick={() => navigate(`/view-profile/${profile.id}`)}
+                      >
+                        View Profile
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

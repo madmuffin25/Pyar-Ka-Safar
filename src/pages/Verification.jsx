@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import {
   Heart,
@@ -12,7 +12,6 @@ import {
   IdCard,
   Crown,
   CheckCircle2,
-  AlertCircle,
   Clock,
   XCircle,
   ExternalLink,
@@ -22,7 +21,6 @@ import { toast } from 'sonner';
 import AuthHeader from '@/components/layout/AuthHeader';
 
 export default function Verification() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -62,8 +60,9 @@ export default function Verification() {
   // Check if there's a pending verification
   const latestSession = verificationHistory?.[0];
   const isPendingVerification = latestSession?.status === 'created' ||
-                                latestSession?.status === 'started' ||
-                                latestSession?.status === 'submitted';
+                                latestSession?.status === 'not_started' ||
+                                latestSession?.status === 'in_progress' ||
+                                latestSession?.status === 'in_review';
 
   const handleStartVerification = async () => {
     if (!profile?.is_premium) {
@@ -86,7 +85,7 @@ export default function Verification() {
       // Get the current URL for callback
       const callbackUrl = `${window.location.origin}/verification-complete`;
 
-      const response = await supabase.functions.invoke('create-veriff-session', {
+      const response = await supabase.functions.invoke('create-didit-session', {
         body: { callbackUrl },
       });
 
@@ -95,7 +94,7 @@ export default function Verification() {
       }
 
       if (response.data?.url) {
-        // Redirect to Veriff
+        // Redirect to Didit
         window.location.href = response.data.url;
       } else {
         throw new Error('No verification URL received');
@@ -115,16 +114,16 @@ export default function Verification() {
         return { icon: CheckCircle2, color: 'text-green-500', label: 'Approved' };
       case 'declined':
         return { icon: XCircle, color: 'text-red-500', label: 'Declined' };
-      case 'resubmission_requested':
-        return { icon: AlertCircle, color: 'text-orange-500', label: 'Resubmission Needed' };
+      case 'in_review':
+        return { icon: Clock, color: 'text-orange-500', label: 'Under Review' };
       case 'expired':
         return { icon: Clock, color: 'text-gray-500', label: 'Expired' };
       case 'abandoned':
         return { icon: XCircle, color: 'text-gray-500', label: 'Incomplete' };
       case 'created':
-      case 'started':
-      case 'submitted':
-        return { icon: Clock, color: 'text-blue-500', label: 'Pending Review' };
+      case 'not_started':
+      case 'in_progress':
+        return { icon: Clock, color: 'text-blue-500', label: 'Pending' };
       default:
         return { icon: Clock, color: 'text-gray-400', label: status };
     }
@@ -284,7 +283,7 @@ export default function Verification() {
             Verify Your Identity
           </h2>
           <p className="text-gray-600 text-center mb-6">
-            Get verified to show others you're a real person and increase your
+            Get verified to show others you&apos;re a real person and increase your
             chances of getting matches.
           </p>
 
@@ -297,7 +296,7 @@ export default function Verification() {
               <div>
                 <h3 className="font-semibold text-gray-900">Build Trust</h3>
                 <p className="text-sm text-gray-600">
-                  Show potential matches that you're genuine and serious about finding a connection.
+                  Show potential matches that you&apos;re genuine and serious about finding a connection.
                 </p>
               </div>
             </div>
@@ -335,19 +334,19 @@ export default function Verification() {
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-[#C46A4A]">
                   1
                 </div>
-                <span className="text-sm text-gray-700">Take a photo of your government ID</span>
+                <span className="text-sm text-gray-700">We use your profile photo as reference</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-[#C46A4A]">
                   2
                 </div>
-                <span className="text-sm text-gray-700">Take a selfie for face matching</span>
+                <span className="text-sm text-gray-700">Take a live selfie to verify it&apos;s really you</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-[#C46A4A]">
                   3
                 </div>
-                <span className="text-sm text-gray-700">Get verified within minutes</span>
+                <span className="text-sm text-gray-700">Get verified within seconds</span>
               </div>
             </div>
           </div>
@@ -371,8 +370,8 @@ export default function Verification() {
           </Button>
 
           <p className="text-xs text-gray-500 text-center mt-4">
-            Your ID is securely processed by Veriff, a trusted identity verification provider.
-            We do not store your ID documents.
+            Your verification is securely processed by Didit, a trusted identity verification provider.
+            Your selfie is only used for verification and is not stored.
           </p>
         </div>
 

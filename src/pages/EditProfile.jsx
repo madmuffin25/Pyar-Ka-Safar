@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,6 +107,7 @@ const languageOptions = [
 
 const FREE_PHOTO_LIMIT = 3;
 const PREMIUM_PHOTO_LIMIT = 6;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
 const promptOptions = [
   "One thing my friends love about me…",
@@ -172,6 +173,14 @@ export default function EditProfile() {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
+    // Validate file type
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      toast.error('Please use JPEG or PNG photos only', {
+        description: 'Other formats like WebP or HEIC are not supported.'
+      });
+      return;
+    }
 
     const currentPhotos = formData?.photos || [];
 
@@ -543,7 +552,7 @@ export default function EditProfile() {
                   <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#C46A4A] transition-colors">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                       onChange={handlePhotoUpload}
                       className="hidden"
                       disabled={isUploading}
