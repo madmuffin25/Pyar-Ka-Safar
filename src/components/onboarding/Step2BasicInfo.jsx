@@ -46,10 +46,12 @@ const canadaProvinces = ["Alberta", "British Columbia", "Manitoba", "New Brunswi
 export default function Step2BasicInfo({ data, updateData, onNext, onBack }) {
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (data.first_name && data.gender && data.age && data.city) {
+    if (data.first_name && data.gender && data.age && data.city && data.state && data.ethnicity) {
       onNext();
     }
   };
+
+  const isComplete = data.first_name && data.gender && data.age && data.city && data.state && data.ethnicity;
   
   const locations = data.country === 'Canada' ? canadaProvinces : usStates;
   
@@ -193,9 +195,10 @@ export default function Step2BasicInfo({ data, updateData, onNext, onBack }) {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </Button>
-          <Button 
+          <Button
             type="submit"
-            className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group"
+            disabled={!isComplete}
+            className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />

@@ -41,9 +41,18 @@ export default function Step5Cultural({ data, updateData, onNext, onBack }) {
     updateData({ festivals_celebrated: newFestivals });
   };
   
+  const isComplete =
+    data.comfortable_long_distance !== undefined &&
+    data.willing_to_relocate &&
+    data.family_involvement &&
+    data.culture_importance &&
+    data.festivals_celebrated?.length > 0;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onNext();
+    if (isComplete) {
+      onNext();
+    }
   };
   
   return (
@@ -157,9 +166,10 @@ export default function Step5Cultural({ data, updateData, onNext, onBack }) {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </Button>
-          <Button 
+          <Button
             type="submit"
-            className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group"
+            disabled={!isComplete}
+            className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />

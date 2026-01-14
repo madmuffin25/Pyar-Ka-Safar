@@ -40,9 +40,16 @@ export default function Step6Personality({ data, updateData, onNext, onBack }) {
     updateData({ interests: newInterests });
   };
   
+  const isComplete =
+    data.interests?.length > 0 &&
+    data.personality_type &&
+    data.relationship_goal;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onNext();
+    if (isComplete) {
+      onNext();
+    }
   };
   
   return (
@@ -141,9 +148,10 @@ export default function Step6Personality({ data, updateData, onNext, onBack }) {
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </Button>
-          <Button 
+          <Button
             type="submit"
-            className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group"
+            disabled={!isComplete}
+            className="flex-1 py-6 text-lg rounded-xl bg-gradient-to-r from-[#C46A4A] to-[#8B2635] hover:from-[#B35A3A] hover:to-[#7A2030] group disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
