@@ -77,6 +77,7 @@ export default function Step1Account({ data, updateData, onNext }) {
           <p className="text-xs text-gray-500">Minimum 6 characters</p>
         </div>
 
+        {/* TODO: Implement social login
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200" />
@@ -119,6 +120,7 @@ export default function Step1Account({ data, updateData, onNext }) {
             <Phone className="w-5 h-5" />
           </Button>
         </div>
+        */}
 
         <Button
           type="submit"
